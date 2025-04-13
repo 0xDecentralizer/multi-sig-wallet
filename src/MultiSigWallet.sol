@@ -4,15 +4,16 @@ pragma solidity ^0.8.22;
 contract MultiSigWallet {
     
     address[] private owners;
-    uint8 requireVerifications;
+    uint8 requireConfirmations;
     
     mapping(address => bool) isOwner;
+    mapping(address => mapping (uint256 => bool)) isConfirmed;
 
-    constructor(address [] memory _owners, uint8 _requireVerifications) {
+    constructor(address [] memory _owners, uint8 _requireConfirmations) {
         require(_owners.length != 0, "Owners list can't be empty!");
         require(
-            _owners.length >= _requireVerifications,
-            "Verifications can't be greater than number of owners"
+            _owners.length >= _requireConfirmations,
+            "Confirmations can't be greater than number of owners"
         );
         for (uint i = 0; i < _owners.length; i++) {
             for (uint j = 1; j < _owners.length; j++) {
@@ -21,8 +22,39 @@ contract MultiSigWallet {
                 }
             }
         }
-
         owners = _owners;
-        requireVerifications = _requireVerifications;
+        requireConfirmations = _requireConfirmations;
     }
+
+    modifier onlyOwners {
+        for (uint i = 0; i < owners.length; i++) {
+                if(msg.sender == owners[i]) {
+                    _;
+                }
+        }
+    }
+
+    struct Transactions {
+        address to;
+        uint256 value;
+        bytes32 data;
+        bool executed;
+        uint8 numConfirmations;
+    }
+
+    Transactions[] transactions;
+    uint256 transactionCounts;
+
+    function setTransaction(address _to, uint256 _value, bytes32 _data) external onlyOwners {
+        Transactions memory newTransaction = Transactions ({
+            to: _to,
+            value: _value,
+            data: _data,
+            executed: false,
+            numConfirmations: 0
+        });
+        transactions.push(newTransaction);
+        transactionCounts++;
+    }
+
 }
