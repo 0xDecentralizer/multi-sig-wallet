@@ -16,8 +16,8 @@ contract MultiSigWallet {
             "Confirmations can't be greater than number of owners"
         );
         for (uint i = 0; i < _owners.length; i++) {
-            for (uint j = 1; j < _owners.length; j++) {
-                if(_owners[i] == _owners[j]) {
+            for (uint j = 0; j < _owners.length; j++) {
+                if(_owners[i] == _owners[j] && i != j) {
                     revert("Onwers not uniqe!");
                 }
             }
@@ -54,7 +54,7 @@ contract MultiSigWallet {
             numConfirmations: 0
         });
         transactions.push(newTransaction);
-        transactionCounts++;
+        transactionCounts += 1;
     }
 
     function signTransaction(uint256 _txIndex) external onlyOwners {
