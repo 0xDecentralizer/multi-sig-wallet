@@ -15,23 +15,22 @@ contract MultiSigWallet {
             _owners.length >= _requireConfirmations,
             "Confirmations can't be greater than number of owners"
         );
+        
         for (uint i = 0; i < _owners.length; i++) {
             for (uint j = 0; j < _owners.length; j++) {
                 if(_owners[i] == _owners[j] && i != j) {
                     revert("Onwers not uniqe!");
                 }
             }
+            isOwner[_owners[i]] = true;
         }
         owners = _owners;
         requireConfirmations = _requireConfirmations;
     }
 
     modifier onlyOwners {
-        for (uint i = 0; i < owners.length; i++) {
-                if(msg.sender == owners[i]) {
-                    _;
-                }
-        }
+        require(isOwner[msg.sender], "Not an owner!");
+        _;
     }
 
     struct Transactions {
