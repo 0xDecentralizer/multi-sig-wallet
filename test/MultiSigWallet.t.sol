@@ -7,14 +7,22 @@ import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract MultiSigWalletTest is Test {
-    address[] owners = [address(0x1), address(0x2), address(0x3)];
+    MultiSigWallet multiSigWallet;
+    address[] owners;
+    uint8 requireConfirmations = 2;
 
     function setUp() public {
-        MultiSigWallet multiSigWallet = new MultiSigWallet(
-            owners,
-            2
-        );
-        
+        owners = new address[](3);
+        owners[0] = address(0x1);
+        owners[1] = address(0x2);
+        owners[2] = address(0x3);
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+    }
+
+    function test_emptyOwners() public {
+        owners = new address[](0);
+        vm.expectRevert("Owners list can't be empty!");
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
     function test_ownersPassed() public view {
