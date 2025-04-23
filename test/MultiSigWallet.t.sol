@@ -35,4 +35,11 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert("Confirmations can't be greater than number of owners");
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
+
+    function test_duplicatedOwners() public {
+        owners.push(address(0x1));
+        vm.expectRevert("Onwers not uniqe!");
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+
+    }
 }
