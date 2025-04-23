@@ -14,6 +14,7 @@ contract MultiSigWalletTest is Test {
             owners,
             2
         );
+        
     }
 
     function test_ownersPassed() public view {
