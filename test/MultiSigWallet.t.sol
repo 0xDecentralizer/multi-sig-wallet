@@ -29,5 +29,10 @@ contract MultiSigWalletTest is Test {
         assertEq(owners.length, 3);
     }
 
-    
+    function test_requireConfirmations() public {
+        owners.pop();
+        owners.pop();
+        vm.expectRevert("Confirmations can't be greater than number of owners");
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+    }
 }
