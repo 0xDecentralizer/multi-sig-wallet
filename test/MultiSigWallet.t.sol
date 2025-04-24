@@ -42,4 +42,14 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
 
     }
+
+    function testRevert_NonOwnerCannotCallSetTransaction() public {
+        address nonOwner = address (0xDe);
+        vm.label(nonOwner, "NonOwner");
+
+        vm.prank(nonOwner);
+        vm.expectRevert("Not an owner!");
+
+        multiSigWallet.setTransaction(address(0x111), 1, "");
+    }
 }
