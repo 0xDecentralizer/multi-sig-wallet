@@ -41,8 +41,8 @@ contract MultiSigWallet {
         uint8 numConfirmations;
     }
 
-    Transactions[] transactions;
-    uint256 transactionCounts;
+    Transactions[] public transactions;
+    uint256 public transactionCounts;
 
     function setTransaction(address _to, uint256 _value, bytes32 _data) external onlyOwners {
         Transactions memory newTransaction = Transactions ({
