@@ -72,4 +72,18 @@ contract MultiSigWalletTest is Test {
 
         assertEq(multiSigWallet.transactionCounts(), 1, "Transaction count should be 1");
     }
+
+        // require(_txIndex < transactionCounts, "There is no such TX!");
+        // require(transactions[_txIndex].executed == false, "This TX has been executed!");
+        // require(isConfirmed[msg.sender][_txIndex] == false, "You signed this TX before!");
+
+        function testRevert_signNonExistTx() public {
+            uint256 txIndex = 1;
+            address owner = owners[0];
+            vm.label(owner, "Owner");
+
+            vm.prank(owner);
+            vm.expectRevert("There is no such TX!");
+            multiSigWallet.signTransaction(txIndex);
+        }
 }
