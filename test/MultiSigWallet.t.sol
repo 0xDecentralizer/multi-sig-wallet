@@ -100,4 +100,26 @@ contract MultiSigWalletTest is Test {
             vm.expectRevert("This TX has been executed!");
             multiSigWallet.signTransaction(txIndex);
         }
+
+        
+        function testRevert_ownerCannotSignATxMoreThanOnce() public {
+            address owner1 = owners[0];
+            address owner2 = owners[1];
+            uint256 txIndex;
+
+            // Initial a transaction by one of the owners
+            vm.prank(owner1);
+            multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+            txIndex = 0;
+            
+            // Sign the transaction by one of the owners
+            vm.prank(owner2);
+            multiSigWallet.signTransaction(txIndex);
+
+            // Sign the EXACT transaction again
+            vm.prank(owner2);
+            vm.expectRevert("You signed this TX before!");
+            multiSigWallet.signTransaction(txIndex);
+
+        }
 }
