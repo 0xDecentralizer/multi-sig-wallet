@@ -122,4 +122,22 @@ contract MultiSigWalletTest is Test {
             multiSigWallet.signTransaction(txIndex);
 
         }
+
+        function test_signTransactionByOwdner() public {
+            address owner = owners[0];
+            uint256 txIndex = 0;
+
+            vm.prank(owner);
+            multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+            vm.prank(owner);
+            multiSigWallet.signTransaction(txIndex);
+
+            (, , , , uint256 numConfirmations) = multiSigWallet.transactions(0);
+
+            assertEq(numConfirmations, 1);
+            
+            bool isConfirmed = multiSigWallet.isConfirmed(owner, txIndex);
+            assertEq(isConfirmed, true);
+        }
 }

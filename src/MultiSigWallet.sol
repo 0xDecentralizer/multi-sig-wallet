@@ -7,7 +7,7 @@ contract MultiSigWallet {
     uint8 requireConfirmations;
     
     mapping(address => bool) isOwner;
-    mapping(address => mapping (uint256 => bool)) isConfirmed;
+    mapping(address => mapping (uint256 => bool)) public isConfirmed;
 
     constructor(address [] memory _owners, uint8 _requireConfirmations) {
         require(_owners.length != 0, "Owners list can't be empty!");
