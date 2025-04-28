@@ -25,8 +25,9 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
-    function test_ownersPassed() public view {
-        assertEq(owners.length, 3);
+    function test_ownersPassed() public {
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        assertEq(multiSigWallet.numOwners(), 3);
     }
 
     function test_requireConfirmations() public {

@@ -42,6 +42,10 @@ contract MultiSigWallet {
 
     Transactions[] public transactions;
 
+    function numOwners() public view returns(uint256) {
+        return owners.length;
+    }
+
     function setTransaction(address _to, uint256 _value, bytes32 _data) external onlyOwners {
         Transactions memory newTransaction = Transactions ({
             to: _to,
