@@ -43,6 +43,12 @@ contract MultiSigWalletTest is Test {
 
     }
 
+    function testRevert_ownercannotBeZeroAddress() public {
+        owners.push(address(0));
+        vm.expectRevert("Owner can't be 0 address");
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+    }
+
     function testRevert_NonOwnerCannotCallSetTransaction() public {
         address nonOwner = address (0xDe);
         vm.label(nonOwner, "NonOwner");
