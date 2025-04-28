@@ -22,7 +22,7 @@ contract MultiSigWallet {
                     revert("Onwers not uniqe!");
                 }
             }
-            isOwner[_owners[i]] = true;
+            isOwner[_owners[i]] = true; // TEST IT LATER ! MAY BE SOME BUGS
         }
         owners = _owners;
         requireConfirmations = _requireConfirmations;
@@ -42,7 +42,6 @@ contract MultiSigWallet {
     }
 
     Transactions[] public transactions;
-    uint256 public transactionCounts;
 
     function setTransaction(address _to, uint256 _value, bytes32 _data) external onlyOwners {
         Transactions memory newTransaction = Transactions ({
@@ -53,11 +52,10 @@ contract MultiSigWallet {
             numConfirmations: 0
         });
         transactions.push(newTransaction);
-        transactionCounts += 1;
     }
 
     function signTransaction(uint256 _txIndex) external onlyOwners {
-        require(_txIndex < transactionCounts, "There is no such TX!");
+        require(_txIndex < transactions.length, "There is no such TX!");
         require(transactions[_txIndex].executed == false, "This TX has been executed!");
         require(isConfirmed[msg.sender][_txIndex] == false, "You signed this TX before!");
 

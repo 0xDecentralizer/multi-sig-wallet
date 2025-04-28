@@ -70,7 +70,6 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, false, "Transaction should not be executed yet");
         assertEq(numConfirmations, 0, "Transaction should start with 0 confimations");
 
-        assertEq(multiSigWallet.transactionCounts(), 1, "Transaction count should be 1");
     }
 
         function testRevert_ANonExistTxCannotBeSign() public {
