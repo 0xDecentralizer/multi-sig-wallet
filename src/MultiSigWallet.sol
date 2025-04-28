@@ -17,14 +17,13 @@ contract MultiSigWallet {
         );
         
         for (uint i = 0; i < _owners.length; i++) {
-            for (uint j = 0; j < _owners.length; j++) {
-                if(_owners[i] == _owners[j] && i != j) {
-                    revert("Onwers not uniqe!");
-                }
-            }
-            isOwner[_owners[i]] = true; // TEST IT LATER ! MAY BE SOME BUGS
+            address owner = _owners[i];
+            require(owner != address(0), "Owner can't be 0 address");
+            require(!isOwner[owner], "Duplicate Owner not accepted");
+
+            isOwner[owner] = true; // ************ TEST NEEDED ************
+            owners.push(owner); // ************ TEST NEEDED ************
         }
-        owners = _owners;
         requireConfirmations = _requireConfirmations;
     }
 

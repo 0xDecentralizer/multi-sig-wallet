@@ -38,7 +38,7 @@ contract MultiSigWalletTest is Test {
 
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
-        vm.expectRevert("Onwers not uniqe!");
+        vm.expectRevert("Duplicate Owner not accepted");
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
 
     }
