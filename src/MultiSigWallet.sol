@@ -3,11 +3,11 @@ pragma solidity ^0.8.22;
 
 contract MultiSigWallet {
     
-    address[] private owners;
-    uint8 requireConfirmations;
+    address[] private owners; // ********** CHECK VISIBILITY **********
+    uint8 public requireConfirmations; // ********** CHECK VISIBILITY **********
     
-    mapping(address => bool) isOwner;
-    mapping(address => mapping (uint256 => bool)) public isConfirmed;
+    mapping(address => bool) public isOwner; // ********** CHECK VISIBILITY **********
+    mapping(address => mapping (uint256 => bool)) public isConfirmed; // ********** CHECK VISIBILITY **********
 
     constructor(address [] memory _owners, uint8 _requireConfirmations) {
         require(_owners.length != 0, "Owners list can't be empty!");

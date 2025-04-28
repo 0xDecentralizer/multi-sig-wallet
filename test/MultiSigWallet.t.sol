@@ -25,9 +25,15 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
-    function test_ownersPassed() public {
+    function test_initateWallet() public {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+
+        assertEq(multiSigWallet.requireConfirmations(), 2);
         assertEq(multiSigWallet.numOwners(), 3);
+
+        assertEq(multiSigWallet.isOwner(address(0x1)), true);
+        assertEq(multiSigWallet.isOwner(address(0x2)), true);
+        assertEq(multiSigWallet.isOwner(address(0x3)), true);
     }
 
     function test_requireConfirmations() public {
@@ -107,7 +113,7 @@ contract MultiSigWalletTest is Test {
             multiSigWallet.signTransaction(txIndex);
         }
 
-        
+
         function testRevert_ownerCannotSignATxMoreThanOnce() public {
             address owner1 = owners[0];
             address owner2 = owners[1];
