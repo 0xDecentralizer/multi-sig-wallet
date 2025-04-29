@@ -69,13 +69,13 @@ contract MultiSigWalletTest is Test {
     function test_setTransactionByOwner() public {
         address target = address(0xDe);
         uint256 value = 1 ether;
-        bytes32 data = "0x123";
+        bytes memory data = "0x123";
 
         vm.prank(owners[0]);
         multiSigWallet.setTransaction(target, value, data);
 
         // Validate state
-        (address to, uint256 txValue, bytes32 txData, bool executed, uint256 numConfirmations) = multiSigWallet.transactions(0);
+        (address to, uint256 txValue, bytes memory txData, bool executed, uint256 numConfirmations) = multiSigWallet.transactions(0);
 
         assertEq(to, target, "Target address mismatch");
         assertEq(txValue, value, "Transaction value mismatch");
