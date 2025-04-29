@@ -46,6 +46,10 @@ contract MultiSigWallet {
         return owners.length;
     }
 
+    function getOwners() public view returns(address[] memory) {
+        return owners;
+    }
+
     function setTransaction(address _to, uint256 _value, bytes32 _data) external onlyOwners {
         Transactions memory newTransaction = Transactions ({
             to: _to,
