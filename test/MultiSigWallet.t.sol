@@ -95,20 +95,28 @@ contract MultiSigWalletTest is Test {
     }
 
     // After implementig executeTransaction() function, we can rewrite this test =]
-    function blob_testRevert_AnExecutedTxCannotBeSign() public {
+    function testRevert_AnExecutedTxCannotBeSign() public {
         // Simulate a transaction
         address owner = owners[0];
-        vm.prank(owner);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        address owner2 = owners[1];
         uint256 txIndex = 0;
 
         vm.prank(owner);
-        // multiSigWallet.executeTransaction(txIndex);
+        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+        vm.prank(owner);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+
+        vm.prank(owner);
+        vm.deal(address(multiSigWallet), 1 ether);
+        multiSigWallet.executeTransaction(txIndex);
 
         vm.label(owner, "Owner");
 
         vm.prank(owner);
-        vm.expectRevert("This TX has been executed!");
+        vm.expectRevert("This TX already executed!");
         multiSigWallet.signTransaction(txIndex);
     }
 

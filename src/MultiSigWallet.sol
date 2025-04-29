@@ -58,10 +58,24 @@ contract MultiSigWallet {
 
     function signTransaction(uint256 _txIndex) external onlyOwner {
         require(_txIndex < transactions.length, "There is no such TX!");
-        require(transactions[_txIndex].executed == false, "This TX has been executed!");
-        require(isConfirmed[msg.sender][_txIndex] == false, "You signed this TX before!");
+        require(!transactions[_txIndex].executed, "This TX already executed!");
+        require(!isConfirmed[msg.sender][_txIndex], "You signed this TX before!");
 
         transactions[_txIndex].numConfirmations += 1;
         isConfirmed[msg.sender][_txIndex] = true;
+    }
+
+    function executeTransaction(uint256 _txIndex) public onlyOwner {
+        require(!transactions[_txIndex].executed, "This TX already executed!");
+        require(transactions[_txIndex].numConfirmations >= requireConfirmations, "Confirmations is not enogh!");
+
+        address target = transactions[_txIndex].to;
+        uint256 value = transactions[_txIndex].value;
+        bytes memory data = transactions[_txIndex].data;
+        
+        transactions[_txIndex].executed = true;
+
+        (bool success, ) = target.call{value: value}(data);
+        require(success, "TX failed!");
     }
 }
