@@ -172,4 +172,15 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
     }
 
+    function testRevert_NonExistentTxCannotBeExecuted() public {
+        address owenr = owners[0];
+        uint256 txIndex = 0;
+
+        vm.prank(owenr);
+        vm.expectRevert("There is no such TX!");
+        multiSigWallet.executeTransaction(txIndex);
+    }
+
+
+
 }
