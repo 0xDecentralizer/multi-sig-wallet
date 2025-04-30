@@ -96,27 +96,13 @@ contract MultiSigWalletTest is Test {
 
     // After implementig executeTransaction() function, we can rewrite this test =]
     function testRevert_AnExecutedTxCannotBeSign() public {
-        // Simulate a transaction
         address owner = owners[0];
-        address owner2 = owners[1];
         uint256 txIndex = 0;
 
-        vm.prank(owner);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        setupExecutedTxWithTwoSignatures();
 
         vm.prank(owner);
-        multiSigWallet.signTransaction(txIndex);
-        vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
-
-        vm.prank(owner);
-        vm.deal(address(multiSigWallet), 1 ether);
-        multiSigWallet.executeTransaction(txIndex);
-
-        vm.label(owner, "Owner");
-
-        vm.prank(owner);
-        vm.expectRevert("This TX already executed!");
+        vm.expectRevert("Executed Tx cannot be sign!");
         multiSigWallet.signTransaction(txIndex);
     }
 
@@ -156,5 +142,34 @@ contract MultiSigWalletTest is Test {
 
         bool isConfirmed = multiSigWallet.isConfirmed(owner, txIndex);
         assertEq(isConfirmed, true);
+    }
+
+    function testRevert_AnExecutedTxCannotBeExecuted() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+
+        setupExecutedTxWithTwoSignatures();
+
+        vm.prank(owner);
+        vm.expectRevert("Executed TX cannot be execute again!");
+        multiSigWallet.executeTransaction(txIndex);
+    }
+
+    function setupExecutedTxWithTwoSignatures() public {
+        address owner = owners[0];
+        address owner2 = owners[1];
+        uint256 txIndex = 0;
+
+        vm.prank(owner);
+        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+        vm.prank(owner);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+
+        vm.prank(owner);
+        vm.deal(address(multiSigWallet), 1 ether);
+        multiSigWallet.executeTransaction(txIndex);
     }
 }

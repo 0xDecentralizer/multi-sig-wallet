@@ -58,7 +58,7 @@ contract MultiSigWallet {
 
     function signTransaction(uint256 _txIndex) external onlyOwner {
         require(_txIndex < transactions.length, "There is no such TX!");
-        require(!transactions[_txIndex].executed, "This TX already executed!");
+        require(!transactions[_txIndex].executed, "Executed Tx cannot be sign!");
         require(!isConfirmed[msg.sender][_txIndex], "You signed this TX before!");
 
         transactions[_txIndex].numConfirmations += 1;
@@ -67,7 +67,7 @@ contract MultiSigWallet {
 
     function executeTransaction(uint256 _txIndex) public onlyOwner {
         require(_txIndex < transactions.length, "There is no such TX!");
-        require(!transactions[_txIndex].executed, "This TX already executed!");
+        require(!transactions[_txIndex].executed, "Executed TX cannot be execute again!");
         require(transactions[_txIndex].numConfirmations >= requireConfirmations, "Not enough confirmations!");
 
         Transaction storage transaction = transactions[_txIndex];
