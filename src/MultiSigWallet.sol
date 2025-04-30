@@ -73,6 +73,8 @@ contract MultiSigWallet {
         Transaction storage transaction = transactions[_txIndex];
         transaction.executed = true;
 
+        require(transaction.value <= address(this).balance, "Insufficient balance!");
+
         (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
         require(success, "Transaction failed");
     }

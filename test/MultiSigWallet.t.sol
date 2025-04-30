@@ -193,4 +193,25 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert("Not enough confirmations!");
         multiSigWallet.executeTransaction(txIndex);
     }
+
+    function testRevert_ExecuteTxWithInsufficientFund() public {
+        address owner = owners[0];
+        address owner2 = owners[1];
+        uint256 txIndex = 0;
+
+        // Set a transaction with - It has 0 confirmations
+        vm.prank(owner);
+        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+        // Confirm the transaction
+        vm.prank(owner);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+        
+        vm.prank(owner);
+        vm.expectRevert("Insufficient balance!");
+        multiSigWallet.executeTransaction(txIndex);
+
+    }
 }
