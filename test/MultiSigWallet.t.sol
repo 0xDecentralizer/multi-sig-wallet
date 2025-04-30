@@ -182,14 +182,14 @@ contract MultiSigWalletTest is Test {
     }
 
     function testRevert_ExecuteTxWithInsufficientConfirmations() public {
-        address owenr = owners[0];
+        address owner = owners[0];
         uint256 txIndex = 0;
 
         // Set a transaction with - It has 0 confirmations
-        vm.prank(owenr);
+        vm.prank(owner);
         multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
         
-        vm.prank(owenr);
+        vm.prank(owner);
         vm.expectRevert("Not enough confirmations!");
         multiSigWallet.executeTransaction(txIndex);
     }
