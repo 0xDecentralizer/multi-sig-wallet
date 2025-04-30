@@ -19,6 +19,24 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
+    function setupExecutedTxWithTwoSignatures() public {
+        address owner = owners[0];
+        address owner2 = owners[1];
+        uint256 txIndex = 0;
+
+        vm.prank(owner);
+        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+        vm.prank(owner);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+
+        vm.prank(owner);
+        vm.deal(address(multiSigWallet), 1 ether);
+        multiSigWallet.executeTransaction(txIndex);
+    }
+
     function test_emptyOwners() public {
         owners = new address[](0);
         vm.expectRevert("Owners list can't be empty!");
@@ -94,7 +112,6 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.signTransaction(txIndex);
     }
 
-    // After implementig executeTransaction() function, we can rewrite this test =]
     function testRevert_AnExecutedTxCannotBeSign() public {
         address owner = owners[0];
         uint256 txIndex = 0;
@@ -155,21 +172,4 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
     }
 
-    function setupExecutedTxWithTwoSignatures() public {
-        address owner = owners[0];
-        address owner2 = owners[1];
-        uint256 txIndex = 0;
-
-        vm.prank(owner);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
-
-        vm.prank(owner);
-        multiSigWallet.signTransaction(txIndex);
-        vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
-
-        vm.prank(owner);
-        vm.deal(address(multiSigWallet), 1 ether);
-        multiSigWallet.executeTransaction(txIndex);
-    }
 }
