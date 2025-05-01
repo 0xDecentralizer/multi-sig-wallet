@@ -142,7 +142,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.signTransaction(txIndex);
     }
 
-    function test_signTransactionByOwdner() public {
+    function test_signTransactionByOwner() public {
         address owner = owners[0];
         uint256 txIndex = 0;
 
@@ -190,7 +190,7 @@ contract MultiSigWalletTest is Test {
         // Set a transaction with - It has 0 confirmations
         vm.prank(owner);
         multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
-        
+
         vm.prank(owner);
         vm.expectRevert("Not enough confirmations!");
         multiSigWallet.executeTransaction(txIndex);
@@ -210,11 +210,10 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.signTransaction(txIndex);
         vm.prank(owner2);
         multiSigWallet.signTransaction(txIndex);
-        
+
         vm.prank(owner);
         vm.expectRevert("Insufficient balance!");
         multiSigWallet.executeTransaction(txIndex);
-
     }
 
     function testRevert_ExecuteTxWithFailedCall() public {
@@ -248,10 +247,10 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert("Not an owner!");
         multiSigWallet.executeTransaction(0);
     }
-    
+
     function test_ExecuteTxWithSufficientFund() public {
         setupTxWithTwoSignatures();
-        
+
         address owner = owners[0];
         uint256 txIndex = 0;
 
@@ -259,7 +258,7 @@ contract MultiSigWalletTest is Test {
         vm.deal(address(multiSigWallet), 1 ether);
         multiSigWallet.executeTransaction(txIndex);
 
-        (,,, bool executed, ) = multiSigWallet.transactions(txIndex);
+        (,,, bool executed,) = multiSigWallet.transactions(txIndex);
 
         assertEq(executed, true);
     }
