@@ -237,4 +237,13 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert("Transaction failed");
         multiSigWallet.executeTransaction(txIndex);
     }
+
+    function test_NonOwnerCannotCallExecuteTransaction() public {
+        address nonOwner = address(0xDe);
+        vm.label(nonOwner, "NonOwner");
+
+        vm.prank(nonOwner);
+        vm.expectRevert("Not an owner!");
+        multiSigWallet.executeTransaction(0);
+    }
 }
