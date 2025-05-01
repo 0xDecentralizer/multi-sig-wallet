@@ -214,4 +214,27 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
     }
+
+    function testRevert_ExecuteTxWithFailedCall() public {
+        address owner = owners[0];
+        address owner2 = owners[1];
+        address target = address(multiSigWallet);
+        uint256 txIndex = 0;
+
+        // Set a transaction with - It has 0 confirmations
+        vm.prank(owner);
+        multiSigWallet.setTransaction(target, 1 wei, "0x1234"); // There is no function with this signature
+
+        // Confirm the transaction
+        vm.prank(owner);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+
+        vm.deal(address(multiSigWallet), 1 ether);
+
+        vm.prank(owner);
+        vm.expectRevert("Transaction failed");
+        multiSigWallet.executeTransaction(txIndex);
+    }
 }
