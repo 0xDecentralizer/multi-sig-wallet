@@ -44,10 +44,16 @@ contract MultiSigWalletTest is Test {
 
         assertEq(multiSigWallet.requireConfirmations(), 2);
         assertEq(multiSigWallet.numOwners(), 3);
+        
+        address[] memory walletOwners = multiSigWallet.getOwners();
 
-        assertEq(multiSigWallet.isOwner(address(0x1)), true);
-        assertEq(multiSigWallet.isOwner(address(0x2)), true);
-        assertEq(multiSigWallet.isOwner(address(0x3)), true);
+        assertEq(walletOwners[0], address(0x1), "Owner at index 0 mismatch");
+        assertEq(walletOwners[1], address(0x2), "Owner at index 1 mismatch");
+        assertEq(walletOwners[2], address(0x3), "Owner at index 2 mismatch");
+
+        assertEq(multiSigWallet.isOwner(walletOwners[0]), true);
+        assertEq(multiSigWallet.isOwner(walletOwners[1]), true);
+        assertEq(multiSigWallet.isOwner(walletOwners[2]), true);
     }
 
     function test_requireConfirmations() public {
