@@ -19,7 +19,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
-    function setupExecutedTxWithTwoSignatures() public {
+    function setupTxWithTwoSignatures() public {
         address owner = owners[0];
         address owner2 = owners[1];
         uint256 txIndex = 0;
@@ -31,10 +31,6 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.signTransaction(txIndex);
         vm.prank(owner2);
         multiSigWallet.signTransaction(txIndex);
-
-        vm.prank(owner);
-        vm.deal(address(multiSigWallet), 1 ether);
-        multiSigWallet.executeTransaction(txIndex);
     }
 
     function test_emptyOwners() public {
@@ -116,10 +112,13 @@ contract MultiSigWalletTest is Test {
         address owner = owners[0];
         uint256 txIndex = 0;
 
-        setupExecutedTxWithTwoSignatures();
+        setupTxWithTwoSignatures();
+        vm.prank(owner);
+        vm.deal(address(multiSigWallet), 1 ether);
+        multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner);
-        vm.expectRevert("Executed Tx cannot be sign!");
+        vm.expectRevert("Executed Tx cannot be signed!");
         multiSigWallet.signTransaction(txIndex);
     }
 
@@ -165,7 +164,10 @@ contract MultiSigWalletTest is Test {
         address owner = owners[0];
         uint256 txIndex = 0;
 
-        setupExecutedTxWithTwoSignatures();
+        setupTxWithTwoSignatures();
+        vm.prank(owner);
+        vm.deal(address(multiSigWallet), 1 ether);
+        multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner);
         vm.expectRevert("Executed TX cannot be execute again!");

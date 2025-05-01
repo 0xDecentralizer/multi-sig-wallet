@@ -58,7 +58,7 @@ contract MultiSigWallet {
 
     function signTransaction(uint256 _txIndex) external onlyOwner {
         require(_txIndex < transactions.length, "There is no such TX!");
-        require(!transactions[_txIndex].executed, "Executed Tx cannot be sign!");
+        require(!transactions[_txIndex].executed, "Executed Tx cannot be signed!");
         require(!isConfirmed[msg.sender][_txIndex], "You signed this TX before!");
 
         transactions[_txIndex].numConfirmations += 1;
