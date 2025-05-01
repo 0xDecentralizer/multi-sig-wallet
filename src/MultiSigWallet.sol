@@ -65,6 +65,15 @@ contract MultiSigWallet {
         isConfirmed[msg.sender][_txIndex] = true;
     }
 
+    function unsignTransaction(uint256 _txIndex) external onlyOwner {
+        require(_txIndex < transactions.length, "There is no such TX!");
+        require(!transactions[_txIndex].executed, "Executed Tx cannot be unsigned!");
+        require(isConfirmed[msg.sender][_txIndex], "You don't signed this TX before!");
+
+        transactions[_txIndex].numConfirmations -= 1;
+        isConfirmed[msg.sender][_txIndex] = false;
+    }
+
     function executeTransaction(uint256 _txIndex) public onlyOwner {
         require(_txIndex < transactions.length, "There is no such TX!");
         require(!transactions[_txIndex].executed, "Executed TX cannot be execute again!");
