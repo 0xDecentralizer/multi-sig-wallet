@@ -248,4 +248,19 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert("Not an owner!");
         multiSigWallet.executeTransaction(0);
     }
+    
+    function test_ExecuteTxWithSufficientFund() public {
+        setupTxWithTwoSignatures();
+        
+        address owner = owners[0];
+        uint256 txIndex = 0;
+
+        vm.prank(owner);
+        vm.deal(address(multiSigWallet), 1 ether);
+        multiSigWallet.executeTransaction(txIndex);
+
+        (,,, bool executed, ) = multiSigWallet.transactions(txIndex);
+
+        assertEq(executed, true);
+    }
 }
