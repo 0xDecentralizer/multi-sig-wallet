@@ -294,4 +294,18 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.unsignTransaction(txIndex);
     }
 
+    function testRevert_UnsigningNotSignedTx() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+
+        // Create transaction but don't sign it
+        vm.prank(owner);
+        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+        // Try to unsign without signing first
+        vm.prank(owner);
+        vm.expectRevert("You don't signed this TX before!");
+        multiSigWallet.unsignTransaction(txIndex);
+    }
+
 }
