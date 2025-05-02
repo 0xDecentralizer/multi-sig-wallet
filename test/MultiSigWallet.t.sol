@@ -269,8 +269,6 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, true);
     }
 
-    // require(_txIndex < transactions.length, "There is no such TX!");
-    // require(!transactions[_txIndex].executed, "Executed Tx cannot be unsigned!");
     // require(isConfirmed[msg.sender][_txIndex], "You don't signed this TX before!");
 
     function testRevert_UnsigningNonExistentTx() public {
@@ -279,6 +277,20 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectRevert("There is no such TX!");
+        multiSigWallet.unsignTransaction(txIndex);
+    }
+
+    function testRevert_UnsigningExecutedTx() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+
+        setupTxWithTwoSignatures(); // Set the first transaction with 0 index
+        vm.deal(address(multiSigWallet), 1 ether);
+        vm.prank(owner);
+        multiSigWallet.executeTransaction(txIndex);
+
+        vm.prank(owner);
+        vm.expectRevert("Executed Tx cannot be unsigned!");
         multiSigWallet.unsignTransaction(txIndex);
     }
 
