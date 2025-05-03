@@ -20,14 +20,14 @@ contract MultiSigWalletTest is Test {
     }
 
     function setupTxWithTwoSignatures() public {
-        address owner = owners[0];
+        address owner1 = owners[0];
         address owner2 = owners[1];
         uint256 txIndex = 0;
 
-        vm.prank(owner);
+        vm.prank(owner1);
         multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
 
-        vm.prank(owner);
+        vm.prank(owner1);
         multiSigWallet.signTransaction(txIndex);
         vm.prank(owner2);
         multiSigWallet.signTransaction(txIndex);
@@ -44,7 +44,7 @@ contract MultiSigWalletTest is Test {
 
         assertEq(multiSigWallet.requireConfirmations(), 2);
         assertEq(multiSigWallet.numOwners(), 3);
-        
+
         address[] memory walletOwners = multiSigWallet.getOwners();
 
         assertEq(walletOwners[0], address(0x1), "Owner at index 0 mismatch");
@@ -159,7 +159,6 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.signTransaction(txIndex);
 
         (,,,, uint256 numConfirmations) = multiSigWallet.transactions(0);
-
         assertEq(numConfirmations, 1);
 
         bool isConfirmed = multiSigWallet.isConfirmed(owner, txIndex);
@@ -309,11 +308,28 @@ contract MultiSigWalletTest is Test {
     function testRevert_NonOwnerUnsigningTx() public {
         address nonOwner = address(0x1234);
         uint256 txIndex = 0;
-        
+
         setupTxWithTwoSignatures(); // Set the first transaction with 0 index
 
         vm.prank(nonOwner);
         vm.expectRevert("Not an owner!");
         multiSigWallet.unsignTransaction(txIndex);
+    }
+
+    function test_UnsigningTx() public {
+        address owner1 = owners[0];
+        uint256 txIndex = 0;
+
+        setupTxWithTwoSignatures(); // Set the first transaction with 0 index
+
+        // Owner1 has signed transactions[0] before in setupTxWithTwoSignatures() function
+        vm.prank(owner1);
+        multiSigWallet.unsignTransaction(txIndex);
+
+        bool isConfirmed = multiSigWallet.isConfirmed(owner1, txIndex);
+        assertEq(isConfirmed, false);
+
+        (,,,, uint256 numConfirmations) = multiSigWallet.transactions(0);
+        assertEq(numConfirmations, 1); // Before unsigning, this Tx had 2 signs and now have 1
     }
 }
