@@ -269,8 +269,6 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, true);
     }
 
-    // require(isConfirmed[msg.sender][_txIndex], "You don't signed this TX before!");
-
     function testRevert_UnsigningNonExistentTx() public {
         address owner = owners[0];
         uint256 txIndex = 0;
@@ -308,4 +306,14 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.unsignTransaction(txIndex);
     }
 
+    function testRevert_NonOwnerUnsigningTx() public {
+        address nonOwner = address(0x1234);
+        uint256 txIndex = 0;
+        
+        setupTxWithTwoSignatures(); // Set the first transaction with 0 index
+
+        vm.prank(nonOwner);
+        vm.expectRevert("Not an owner!");
+        multiSigWallet.unsignTransaction(txIndex);
+    }
 }
