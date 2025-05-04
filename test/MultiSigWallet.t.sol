@@ -11,6 +11,11 @@ contract MultiSigWalletTest is Test {
     address[] owners;
     uint8 requireConfirmations = 2;
 
+    event SubmitTransaction(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
+    event ConfirmTransaction(address indexed owner, uint256 indexed txIndex);
+    event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
+    event ExecuteTransaction(address indexed owner, uint256 indexed txIndex);
+
     function setUp() public {
         owners = new address[](3);
         owners[0] = address(0x1);
@@ -331,5 +336,18 @@ contract MultiSigWalletTest is Test {
 
         (,,,, uint256 numConfirmations) = multiSigWallet.transactions(0);
         assertEq(numConfirmations, 1); // Before unsigning, this Tx had 2 signs and now have 1
+    }
+
+    function testEmit_SubmitTransaction() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+        address target = address(0x1234);
+        uint256 value = 1 wei;
+        bytes memory data = "0x123";
+
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true);
+        emit SubmitTransaction(owner, txIndex, target, value, data);
+        multiSigWallet.setTransaction(target, value, data);
     }
 }
