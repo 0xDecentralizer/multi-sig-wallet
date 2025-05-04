@@ -11,10 +11,10 @@ contract MultiSigWalletTest is Test {
     address[] owners;
     uint8 requireConfirmations = 2;
 
-    event SubmitTransaction(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
-    event ConfirmTransaction(address indexed owner, uint256 indexed txIndex);
-    event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
-    event ExecuteTransaction(address indexed owner, uint256 indexed txIndex);
+    event TransactionSubmited(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
+    event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
+    event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
+    event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
 
     function setUp() public {
         owners = new address[](3);
@@ -347,7 +347,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit SubmitTransaction(owner, txIndex, target, value, data);
+        emit TransactionSubmited(owner, txIndex, target, value, data);
         multiSigWallet.setTransaction(target, value, data);
     }
 
@@ -363,7 +363,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, false, false);
-        emit ConfirmTransaction(owner, txIndex);
+        emit TransactionConfirmed(owner, txIndex);
         multiSigWallet.signTransaction(txIndex);
     }
 
@@ -375,7 +375,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, false, false);
-        emit RevokeConfirmation(owner, txIndex);
+        emit ConfirmationRevoked(owner, txIndex);
         multiSigWallet.unsignTransaction(txIndex);
     }
 
@@ -388,7 +388,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, false, false);
-        emit ExecuteTransaction(owner, txIndex);
+        emit TransactionExecuted(owner, txIndex);
         multiSigWallet.executeTransaction(txIndex);
     }
 }
