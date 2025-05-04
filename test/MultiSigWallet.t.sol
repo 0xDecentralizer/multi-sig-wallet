@@ -40,7 +40,7 @@ contract MultiSigWalletTest is Test {
 
     function test_emptyOwners() public {
         owners = new address[](0);
-        vm.expectRevert("Owners list can't be empty!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_EmptyOwnersList.selector));
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
@@ -64,19 +64,19 @@ contract MultiSigWalletTest is Test {
     function test_requireConfirmations() public {
         owners.pop();
         owners.pop();
-        vm.expectRevert("Confirmations can't be greater than number of owners");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
-        vm.expectRevert("Duplicate Owner not accepted");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_DuplicateOwner.selector));
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
     function testRevert_ownercannotBeZeroAddress() public {
         owners.push(address(0));
-        vm.expectRevert("Owner can't be 0 address");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidOwnerAddress.selector));
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
@@ -85,7 +85,7 @@ contract MultiSigWalletTest is Test {
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
-        vm.expectRevert("Not an owner!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
 
         multiSigWallet.setTransaction(address(0x111), 1, "");
     }
@@ -115,7 +115,7 @@ contract MultiSigWalletTest is Test {
         vm.label(owner, "Owner");
 
         vm.prank(owner);
-        vm.expectRevert("There is no such TX!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
         multiSigWallet.signTransaction(txIndex);
     }
 
@@ -129,7 +129,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner);
-        vm.expectRevert("Executed Tx cannot be signed!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
         multiSigWallet.signTransaction(txIndex);
     }
 
@@ -149,7 +149,22 @@ contract MultiSigWalletTest is Test {
 
         // Sign the EXACT transaction again
         vm.prank(owner2);
-        vm.expectRevert("You signed this TX before!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadySigned.selector));
+        multiSigWallet.signTransaction(txIndex);
+    }
+    
+    function testRevert_NonOwnerCannotSignATx() public {
+        address nonOwner = address(0xDe);
+        vm.label(nonOwner, "NonOwner");
+        uint256 txIndex = 0;
+
+        // Initial a transaction by one of the owners
+        vm.prank(owners[0]);
+        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+
+        // Sign the transaction by a non-owner
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
         multiSigWallet.signTransaction(txIndex);
     }
 
@@ -180,7 +195,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner);
-        vm.expectRevert("Executed TX cannot be execute again!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -189,7 +204,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owenr);
-        vm.expectRevert("There is no such TX!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -202,7 +217,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
 
         vm.prank(owner);
-        vm.expectRevert("Not enough confirmations!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -222,7 +237,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.signTransaction(txIndex);
 
         vm.prank(owner);
-        vm.expectRevert("Insufficient balance!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InsufficientBalance.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -245,7 +260,7 @@ contract MultiSigWalletTest is Test {
         vm.deal(address(multiSigWallet), 1 ether);
 
         vm.prank(owner);
-        vm.expectRevert("Transaction failed");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionFailed.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -254,7 +269,7 @@ contract MultiSigWalletTest is Test {
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
-        vm.expectRevert("Not an owner!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
         multiSigWallet.executeTransaction(0);
     }
 
@@ -278,7 +293,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner);
-        vm.expectRevert("There is no such TX!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
         multiSigWallet.unsignTransaction(txIndex);
     }
 
@@ -292,7 +307,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner);
-        vm.expectRevert("Executed Tx cannot be unsigned!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
         multiSigWallet.unsignTransaction(txIndex);
     }
 
@@ -306,7 +321,7 @@ contract MultiSigWalletTest is Test {
 
         // Try to unsign without signing first
         vm.prank(owner);
-        vm.expectRevert("You don't signed this TX before!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxNotSigned.selector));
         multiSigWallet.unsignTransaction(txIndex);
     }
 
@@ -317,7 +332,7 @@ contract MultiSigWalletTest is Test {
         setupTxWithTwoSignatures(); // Set the first transaction with 0 index
 
         vm.prank(nonOwner);
-        vm.expectRevert("Not an owner!");
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
         multiSigWallet.unsignTransaction(txIndex);
     }
 
