@@ -362,8 +362,20 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.setTransaction(target, value, data);
 
         vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
+        vm.expectEmit(true, true, false, false);
         emit ConfirmTransaction(owner, txIndex);
         multiSigWallet.signTransaction(txIndex);
+    }
+
+    function testEmit_RevokeConfirmation() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+
+        setupTxWithTwoSignatures();
+
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, false);
+        emit RevokeConfirmation(owner, txIndex);
+        multiSigWallet.unsignTransaction(txIndex);
     }
 }
