@@ -378,4 +378,17 @@ contract MultiSigWalletTest is Test {
         emit RevokeConfirmation(owner, txIndex);
         multiSigWallet.unsignTransaction(txIndex);
     }
+
+    function testEmit_ExecuteTransaction() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+
+        setupTxWithTwoSignatures();
+        vm.deal(address(multiSigWallet), 1 ether);
+
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, false);
+        emit ExecuteTransaction(owner, txIndex);
+        multiSigWallet.executeTransaction(txIndex);
+    }
 }
