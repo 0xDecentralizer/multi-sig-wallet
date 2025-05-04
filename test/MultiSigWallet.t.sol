@@ -350,4 +350,20 @@ contract MultiSigWalletTest is Test {
         emit SubmitTransaction(owner, txIndex, target, value, data);
         multiSigWallet.setTransaction(target, value, data);
     }
+
+    function testEmit_ConfirmTransaction() public {
+        address owner = owners[0];
+        uint256 txIndex = 0;
+        address target = address(0x1234);
+        uint256 value = 1 wei;
+        bytes memory data = "0x123";
+
+        vm.prank(owner);
+        multiSigWallet.setTransaction(target, value, data);
+
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, true);
+        emit ConfirmTransaction(owner, txIndex);
+        multiSigWallet.signTransaction(txIndex);
+    }
 }
