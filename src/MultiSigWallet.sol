@@ -8,6 +8,19 @@ contract MultiSigWallet {
     mapping(address => bool) public isOwner;
     mapping(address => mapping(uint256 => bool)) public isConfirmed;
 
+    error MSW_NotOwner();
+    error MSW_TxDoesNotExist();
+    error MSW_TxAlreadyExecuted();
+    error MSW_TxAlreadySigned();
+    error MSW_TxNotSigned();
+    error MSW_NotEnoughConfirmations();
+    error MSW_InsufficientBalance();
+    error MSW_TransactionFailed();
+    error MSW_DuplicateOwner();
+    error MSW_InvalidOwnerAddress();
+    error MSW_EmptyOwnersList();
+    error MSW_ConfirmationsExceedOwnersCount();
+
     event TransactionSubmited(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
@@ -18,13 +31,13 @@ contract MultiSigWallet {
     event RequirementChanged(uint8 required);
 
     constructor(address[] memory _owners, uint8 _requireConfirmations) {
-        require(_owners.length != 0, "Owners list can't be empty!");
-        require(_owners.length >= _requireConfirmations, "Confirmations can't be greater than number of owners");
+        if(_owners.length == 0) revert MSW_EmptyOwnersList();
+        if(_owners.length < _requireConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
 
         for (uint256 i = 0; i < _owners.length;) {
             address owner = _owners[i];
-            require(owner != address(0), "Owner can't be 0 address");
-            require(!isOwner[owner], "Duplicate Owner not accepted");
+            if(owner == address(0)) revert MSW_InvalidOwnerAddress();
+            if(isOwner[owner]) revert MSW_DuplicateOwner();
 
             isOwner[owner] = true;
             owners.push(owner);
@@ -37,7 +50,7 @@ contract MultiSigWallet {
     }
 
     modifier onlyOwner() {
-        require(isOwner[msg.sender], "Not an owner!");
+        if(!isOwner[msg.sender]) revert MSW_NotOwner();
         _;
     }
 
@@ -68,9 +81,9 @@ contract MultiSigWallet {
     }
 
     function signTransaction(uint256 _txIndex) external onlyOwner {
-        require(_txIndex < transactions.length, "There is no such TX!");
-        require(!transactions[_txIndex].executed, "Executed Tx cannot be signed!");
-        require(!isConfirmed[msg.sender][_txIndex], "You signed this TX before!");
+        if(_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
+        if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
+        if(isConfirmed[msg.sender][_txIndex]) revert MSW_TxAlreadySigned();
 
         transactions[_txIndex].numConfirmations += 1;
         isConfirmed[msg.sender][_txIndex] = true;
@@ -79,9 +92,9 @@ contract MultiSigWallet {
     }
 
     function unsignTransaction(uint256 _txIndex) external onlyOwner {
-        require(_txIndex < transactions.length, "There is no such TX!");
-        require(!transactions[_txIndex].executed, "Executed Tx cannot be unsigned!");
-        require(isConfirmed[msg.sender][_txIndex], "You don't signed this TX before!");
+        if(_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
+        if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
+        if(!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
 
         transactions[_txIndex].numConfirmations -= 1;
         isConfirmed[msg.sender][_txIndex] = false;
@@ -90,17 +103,17 @@ contract MultiSigWallet {
     }
 
     function executeTransaction(uint256 _txIndex) public onlyOwner {
-        require(_txIndex < transactions.length, "There is no such TX!");
-        require(!transactions[_txIndex].executed, "Executed TX cannot be execute again!");
-        require(transactions[_txIndex].numConfirmations >= requireConfirmations, "Not enough confirmations!");
+        if(_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
+        if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
+        if(transactions[_txIndex].numConfirmations < requireConfirmations) revert MSW_NotEnoughConfirmations();
 
         Transaction storage transaction = transactions[_txIndex];
         transaction.executed = true;
 
-        require(transaction.value <= address(this).balance, "Insufficient balance!");
+        if(transaction.value > address(this).balance) revert MSW_InsufficientBalance();
 
         (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
-        require(success, "Transaction failed");
+        if(!success) revert MSW_TransactionFailed();
 
         emit TransactionExecuted(msg.sender, _txIndex);
     }
