@@ -54,6 +54,11 @@ contract MultiSigWallet {
         _;
     }
 
+    // modifier notExecuted(uint256 _txIndex) {
+    //     if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
+    //     _;
+    // }
+
     struct Transaction {
         address to;
         uint256 value;
@@ -73,6 +78,7 @@ contract MultiSigWallet {
     }
 
     function setTransaction(address _to, uint256 _value, bytes memory _data) external onlyOwner {
+        if(_data.length == 0) _data = "executeTransaction()";
         Transaction memory newTransaction =
             Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
         transactions.push(newTransaction);
@@ -107,14 +113,46 @@ contract MultiSigWallet {
         if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if(transactions[_txIndex].numConfirmations < requireConfirmations) revert MSW_NotEnoughConfirmations();
 
-        Transaction storage transaction = transactions[_txIndex];
-        transaction.executed = true;
+        if(keccak256(transactions[_txIndex].data) == keccak256("executeTransaction()")) {
+            Transaction storage transaction = transactions[_txIndex];
+            transaction.executed = true;
 
-        if(transaction.value > address(this).balance) revert MSW_InsufficientBalance();
+            if(transaction.value > address(this).balance) revert MSW_InsufficientBalance();
 
-        (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
-        if(!success) revert MSW_TransactionFailed();
+            (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
+            if(!success) revert MSW_TransactionFailed();
 
-        emit TransactionExecuted(msg.sender, _txIndex);
+            emit TransactionExecuted(msg.sender, _txIndex);
+
+        } else if(bytes4(transactions[_txIndex].data) == bytes4(keccak256("addOwner(address)"))) {
+            address newOwner = abi.decode(transactions[_txIndex].data, (address));
+            isOwner[newOwner] = true;
+            owners.push(newOwner);
+            transactions[_txIndex].executed = true;
+            emit OwnerAdded(newOwner);
+        } else if(keccak256(transactions[_txIndex].data) == keccak256("removeOwner(address)")) {
+            address oldOwner = abi.decode(transactions[_txIndex].data, (address));
+            isOwner[oldOwner] = false;
+            for (uint256 i = 0; i < owners.length; i++) {
+                if(owners[i] == oldOwner) {
+                    owners[i] = owners[owners.length - 1];
+                    owners.pop();
+                    break;
+                }
+            }
+            transactions[_txIndex].executed = true;
+            emit OwnerRemoved(oldOwner);
+        }
+    }
+
+    function submitAddOwner(address _owner) external onlyOwner {
+        if(_owner == address(0)) revert MSW_InvalidOwnerAddress();
+        if(isOwner[_owner]) revert MSW_DuplicateOwner();
+
+        Transaction memory newTransaction =
+            Transaction({to: _owner, value: 0, data: abi.encodeWithSignature("addOwner(address)", _owner), executed: false, numConfirmations: 0});
+        transactions.push(newTransaction);
+
+        emit TransactionSubmited(msg.sender, transactions.length - 1, _owner, 0, abi.encodeWithSignature("addOwner(address)", _owner));
     }
 }
