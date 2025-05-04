@@ -8,6 +8,16 @@ contract MultiSigWallet {
     mapping(address => bool) public isOwner;
     mapping(address => mapping(uint256 => bool)) public isConfirmed;
 
+    event SubmitTransaction(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
+    event ConfirmTransaction(address indexed owner, uint256 indexed txIndex);
+    event RevokeConfirmation(address indexed owner, uint256 indexed txIndex);
+    event ExecuteTransaction(address indexed owner, uint256 indexed txIndex);
+    event Deposit(address indexed sender, uint256 value);
+    event Withdraw(address indexed owner, uint256 value);
+    event OwnerAdded(address indexed owner);
+    event OwnerRemoved(address indexed owner);
+    event RequirementChanged(uint8 required);
+
     constructor(address[] memory _owners, uint8 _requireConfirmations) {
         require(_owners.length != 0, "Owners list can't be empty!");
         require(_owners.length >= _requireConfirmations, "Confirmations can't be greater than number of owners");
@@ -54,6 +64,8 @@ contract MultiSigWallet {
         Transaction memory newTransaction =
             Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
         transactions.push(newTransaction);
+
+        emit SubmitTransaction(msg.sender, transactions.length - 1, _to, _value, _data);
     }
 
     function signTransaction(uint256 _txIndex) external onlyOwner {
@@ -63,6 +75,8 @@ contract MultiSigWallet {
 
         transactions[_txIndex].numConfirmations += 1;
         isConfirmed[msg.sender][_txIndex] = true;
+
+        emit ConfirmTransaction(msg.sender, _txIndex);
     }
 
     function unsignTransaction(uint256 _txIndex) external onlyOwner {
@@ -72,6 +86,8 @@ contract MultiSigWallet {
 
         transactions[_txIndex].numConfirmations -= 1;
         isConfirmed[msg.sender][_txIndex] = false;
+
+        emit RevokeConfirmation(msg.sender, _txIndex);
     }
 
     function executeTransaction(uint256 _txIndex) public onlyOwner {
@@ -86,5 +102,7 @@ contract MultiSigWallet {
 
         (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
         require(success, "Transaction failed");
+
+        emit ExecuteTransaction(msg.sender, _txIndex);
     }
 }
