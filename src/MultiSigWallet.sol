@@ -20,7 +20,7 @@ contract MultiSigWallet {
     error MSW_InvalidOwnerAddress();
     error MSW_EmptyOwnersList();
     error MSW_ConfirmationsExceedOwnersCount();
-
+    error MSW_InvalidFunctionSelector();
     event TransactionSubmited(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
@@ -109,50 +109,104 @@ contract MultiSigWallet {
     }
 
     function executeTransaction(uint256 _txIndex) public onlyOwner {
-        if(_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
-        if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
-        if(transactions[_txIndex].numConfirmations < requireConfirmations) revert MSW_NotEnoughConfirmations();
+        if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
 
-        if(keccak256(transactions[_txIndex].data) == keccak256("executeTransaction()")) {
-            Transaction storage transaction = transactions[_txIndex];
+        Transaction storage transaction = transactions[_txIndex];
+
+        if (transaction.executed) revert MSW_TxAlreadyExecuted();
+        if (transaction.numConfirmations < requireConfirmations) revert MSW_NotEnoughConfirmations();
+
+        bytes memory txData = transaction.data;
+
+        bytes4 selector;
+        assembly {
+            selector := mload(add(txData, 32))
+        }
+
+        if (selector == this.executeTransaction.selector) {
             transaction.executed = true;
 
-            if(transaction.value > address(this).balance) revert MSW_InsufficientBalance();
+            if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
 
-            (bool success,) = transaction.to.call{value: transaction.value}(transaction.data);
-            if(!success) revert MSW_TransactionFailed();
+            (bool success, ) = transaction.to.call{value: transaction.value}(txData);
+            if (!success) revert MSW_TransactionFailed();
 
             emit TransactionExecuted(msg.sender, _txIndex);
 
-        } else if(bytes4(transactions[_txIndex].data) == bytes4(keccak256("addOwner(address)"))) {
-            address newOwner = abi.decode(transactions[_txIndex].data, (address));
+        } else if (selector == this.submitAddOwner.selector) {
+            address newOwner = abi.decode(sliceBytes(txData, 4), (address));
+            if (newOwner == address(0)) revert MSW_InvalidOwnerAddress();
+            if (isOwner[newOwner]) revert MSW_DuplicateOwner();
+
             isOwner[newOwner] = true;
             owners.push(newOwner);
-            transactions[_txIndex].executed = true;
+
+            transaction.executed = true;
             emit OwnerAdded(newOwner);
-        } else if(keccak256(transactions[_txIndex].data) == keccak256("removeOwner(address)")) {
-            address oldOwner = abi.decode(transactions[_txIndex].data, (address));
+
+        } else if (selector == this.submitRemoveOwner.selector) {
+            address oldOwner = abi.decode(sliceBytes(txData, 4), (address));
+            if (!isOwner[oldOwner]) revert MSW_NotOwner();
+            if (owners.length - 1 < requireConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
+
             isOwner[oldOwner] = false;
+
             for (uint256 i = 0; i < owners.length; i++) {
-                if(owners[i] == oldOwner) {
+                if (owners[i] == oldOwner) {
                     owners[i] = owners[owners.length - 1];
                     owners.pop();
                     break;
                 }
             }
-            transactions[_txIndex].executed = true;
+
+            transaction.executed = true;
             emit OwnerRemoved(oldOwner);
+
+        } else {
+            revert MSW_InvalidFunctionSelector();
         }
     }
 
     function submitAddOwner(address _owner) external onlyOwner {
-        if(_owner == address(0)) revert MSW_InvalidOwnerAddress();
-        if(isOwner[_owner]) revert MSW_DuplicateOwner();
+        if (_owner == address(0)) revert MSW_InvalidOwnerAddress();
+        if (isOwner[_owner]) revert MSW_DuplicateOwner();
 
-        Transaction memory newTransaction =
-            Transaction({to: _owner, value: 0, data: abi.encodeWithSignature("addOwner(address)", _owner), executed: false, numConfirmations: 0});
-        transactions.push(newTransaction);
+        bytes memory data = abi.encodeWithSelector(this.submitAddOwner.selector, _owner);
 
-        emit TransactionSubmited(msg.sender, transactions.length - 1, _owner, 0, abi.encodeWithSignature("addOwner(address)", _owner));
+        transactions.push(Transaction({
+            to: address(this),
+            value: 0,
+            data: data,
+            executed: false,
+            numConfirmations: 0
+        }));
+
+        emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
+    }
+
+    function submitRemoveOwner(address _owner) external onlyOwner {
+        if (!isOwner[_owner]) revert MSW_NotOwner();
+
+        bytes memory data = abi.encodeWithSelector(this.submitRemoveOwner.selector, _owner);
+
+        transactions.push(Transaction({
+            to: address(this),
+            value: 0,
+            data: data,
+            executed: false,
+            numConfirmations: 0
+        }));
+
+        emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
+    }
+
+    function sliceBytes(bytes memory data, uint256 start) internal pure returns (bytes memory) {
+        require(start <= data.length, "Invalid slice start");
+
+        bytes memory result = new bytes(data.length - start);
+        for (uint256 i = start; i < data.length; i++) {
+            result[i - start] = data[i];
+        }
+        return result;
     }
 }
