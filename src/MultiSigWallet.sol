@@ -78,7 +78,6 @@ contract MultiSigWallet {
     }
 
     function setTransaction(address _to, uint256 _value, bytes memory _data) external onlyOwner {
-        if(_data.length == 0) _data = "executeTransaction()";
         Transaction memory newTransaction =
             Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
         transactions.push(newTransaction);
@@ -123,17 +122,7 @@ contract MultiSigWallet {
             selector := mload(add(txData, 32))
         }
 
-        if (selector == this.executeTransaction.selector) {
-            transaction.executed = true;
-
-            if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
-
-            (bool success, ) = transaction.to.call{value: transaction.value}(txData);
-            if (!success) revert MSW_TransactionFailed();
-
-            emit TransactionExecuted(msg.sender, _txIndex);
-
-        } else if (selector == this.submitAddOwner.selector) {
+        if (selector == this.submitAddOwner.selector) {
             address newOwner = abi.decode(sliceBytes(txData, 4), (address));
             if (newOwner == address(0)) revert MSW_InvalidOwnerAddress();
             if (isOwner[newOwner]) revert MSW_DuplicateOwner();
@@ -163,7 +152,14 @@ contract MultiSigWallet {
             emit OwnerRemoved(oldOwner);
 
         } else {
-            revert MSW_InvalidFunctionSelector();
+            transaction.executed = true;
+
+            if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
+
+            (bool success, ) = transaction.to.call{value: transaction.value}(txData);
+            if (!success) revert MSW_TransactionFailed();
+
+            emit TransactionExecuted(msg.sender, _txIndex);
         }
     }
 
