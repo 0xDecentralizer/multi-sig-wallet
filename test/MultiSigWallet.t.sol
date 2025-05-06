@@ -15,7 +15,7 @@ contract MultiSigWalletTest is Test {
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
     event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
-
+    event OwnerAdded(address indexed newOwner);
     function setUp() public {
         owners = new address[](3);
         owners[0] = address(0x1);
@@ -273,7 +273,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(0);
     }
 
-    function test_ExecuteTxWithSufficientFund() public {
+    function test_ExecuteRegularTxWithSufficientFund() public {
         setupTxWithTwoSignatures();
 
         address owner = owners[0];
@@ -285,6 +285,33 @@ contract MultiSigWalletTest is Test {
 
         (,,, bool executed,) = multiSigWallet.transactions(txIndex);
 
+        assertEq(executed, true);
+    }
+
+    function test_ExecuteAddOwnerTxWithSufficientFund() public {
+        address owner1 = owners[0];
+        address owner2 = owners[1];
+        address newOwner = address(0x4);
+        uint256 txIndex = 0;
+        uint256 numOwnersBeforeTx = multiSigWallet.numOwners();
+
+        vm.prank(owner1);
+        multiSigWallet.submitAddOwner(newOwner);
+
+        vm.prank(owner1);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+
+        vm.prank(owner1);
+        vm.expectEmit(true, false, false, false);
+        emit OwnerAdded(newOwner);
+        multiSigWallet.executeTransaction(txIndex);
+
+        assertEq(multiSigWallet.numOwners(), numOwnersBeforeTx + 1);
+        assertEq(multiSigWallet.isOwner(newOwner), true);
+
+        (,,, bool executed, ) = multiSigWallet.transactions(txIndex);
         assertEq(executed, true);
     }
 
