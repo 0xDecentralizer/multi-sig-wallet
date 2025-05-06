@@ -20,7 +20,6 @@ contract MultiSigWallet {
     error MSW_InvalidOwnerAddress();
     error MSW_EmptyOwnersList();
     error MSW_ConfirmationsExceedOwnersCount();
-    error MSW_OwnersExceedConfirmationsCount();
     error MSW_InvalidFunctionSelector();
     event TransactionSubmited(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
@@ -179,7 +178,7 @@ contract MultiSigWallet {
 
     function submitRemoveOwner(address _owner) external onlyOwner {
         if (!isOwner[_owner]) revert MSW_NotOwner();
-        if (owners.length - 1 < requireConfirmations) revert MSW_OwnersExceedConfirmationsCount();
+        if (owners.length - 1 < requireConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
 
         bytes memory data = abi.encodeWithSelector(this.submitRemoveOwner.selector, _owner);
 
