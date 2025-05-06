@@ -327,6 +327,16 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidOwnerAddress.selector));
         multiSigWallet.submitAddOwner(newOwner);
     }
+
+    
+    function testRevert_AddOwnerTxWithDuplicateOwner() public {
+        address owner = owners[0];
+        address newOwner = owners[1];
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_DuplicateOwner.selector));
+        multiSigWallet.submitAddOwner(newOwner);
+    }  
     
     function testRevert_UnsigningNonExistentTx() public {
         address owner = owners[0];
