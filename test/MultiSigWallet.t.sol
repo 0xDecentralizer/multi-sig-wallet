@@ -91,11 +91,15 @@ contract MultiSigWalletTest is Test {
     }
 
     function test_setTransactionByOwner() public {
+        address owner = owners[0];
         address target = address(0xDe);
         uint256 value = 1 ether;
+        uint256 txIndex = 0;
         bytes memory data = "0x123";
 
         vm.prank(owners[0]);
+        vm.expectEmit(true, true, true, true);
+        emit TransactionSubmited(owner, txIndex, target, value, data);
         multiSigWallet.setTransaction(target, value, data);
 
         // Validate state
@@ -401,6 +405,8 @@ contract MultiSigWalletTest is Test {
         bytes memory data = "0x123";
 
         vm.prank(owner);
+        vm.expectEmit(true, true, true, true);
+        emit TransactionSubmited(owner, txIndex, target, value, data);
         multiSigWallet.setTransaction(target, value, data);
 
         vm.prank(owner);
