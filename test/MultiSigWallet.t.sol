@@ -359,6 +359,19 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
+    
+    function testRevert_RemoveOwnerTxWithInsufficientConfirmations() public {
+        address owner = owners[0];
+        address oldOwner = owners[1];
+        uint256 txIndex = 0;
+        
+        vm.prank(owner);
+        multiSigWallet.submitRemoveOwner(oldOwner);
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
+        multiSigWallet.executeTransaction(txIndex);
+    }   
 
     function testRevert_UnsigningNonExistentTx() public {
         address owner = owners[0];
