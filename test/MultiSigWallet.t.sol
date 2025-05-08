@@ -401,6 +401,15 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitRemoveOwner(oldOwner);
     }
 
+    function testRevert_NonOwnerCannotRemoveOwner() public {
+        address nonOwner = address(0xDe);
+        vm.label(nonOwner, "NonOwner");
+
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        multiSigWallet.submitRemoveOwner(owners[1]);
+    }
+
     function test_RemoveOwnerTx() public {
         address owner = owners[0];
         address oldOwner = owners[1];
