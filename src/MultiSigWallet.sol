@@ -9,6 +9,7 @@ contract MultiSigWallet {
     mapping(address => mapping(uint256 => bool)) public isConfirmed;
 
     error MSW_NotOwner();
+    error MSW_OldOwnerInvalid();
     error MSW_TxDoesNotExist();
     error MSW_TxAlreadyExecuted();
     error MSW_TxAlreadySigned();
@@ -177,7 +178,7 @@ contract MultiSigWallet {
     }
 
     function submitRemoveOwner(address _owner) external onlyOwner {
-        if (!isOwner[_owner]) revert MSW_NotOwner();
+        if (!isOwner[_owner]) revert MSW_OldOwnerInvalid();
         if (owners.length - 1 < requireConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
 
         bytes memory data = abi.encodeWithSelector(this.submitRemoveOwner.selector, _owner);
