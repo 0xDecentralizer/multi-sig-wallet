@@ -22,6 +22,8 @@ contract MultiSigWallet {
     error MSW_EmptyOwnersList();
     error MSW_ConfirmationsExceedOwnersCount();
     error MSW_InvalidFunctionSelector();
+    error MSW_InvalidSliceStart();
+
     event TransactionSubmited(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
@@ -30,12 +32,11 @@ contract MultiSigWallet {
     event OwnerAdded(address indexed owner);
     event OwnerRemoved(address indexed owner);
     event RequirementChanged(uint8 required);
-    event BytesSliceError(bytes data, uint256 start);
-
+    
     constructor(address[] memory _owners, uint8 _requireConfirmations) {
         if(_owners.length == 0) revert MSW_EmptyOwnersList();
         if(_owners.length < _requireConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
-
+        
         for (uint256 i = 0; i < _owners.length;) {
             address owner = _owners[i];
             if(owner == address(0)) revert MSW_InvalidOwnerAddress();
