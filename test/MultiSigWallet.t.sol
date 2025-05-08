@@ -323,14 +323,17 @@ contract MultiSigWalletTest is Test {
         address owner = owners[0];
         address newOwner = address(0x4);
         uint256 txIndex = 0;
+        bytes memory _data = abi.encodeWithSelector(MultiSigWallet.submitAddOwner.selector, newOwner);
 
         vm.prank(owner);
+        vm.expectEmit(true, true, true, true);
+        emit TransactionSubmited(owner, txIndex, address(multiSigWallet), 0, _data);
         multiSigWallet.submitAddOwner(newOwner);
 
         (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations) = multiSigWallet.transactions(txIndex);
         assertEq(to, address(multiSigWallet));
         assertEq(value, 0);
-        assertEq(data, abi.encodeWithSelector(MultiSigWallet.submitAddOwner.selector, newOwner));
+        assertEq(data, _data);
         assertEq(executed, false);
         assertEq(numConfirmations, 0);
     }
@@ -392,7 +395,6 @@ contract MultiSigWalletTest is Test {
     function testRevert_RemoveOwnerTxWithInvalidOwnerAddress() public {
         address owner = owners[0];
         address oldOwner = address(0xDe);
-        uint256 txIndex = 0;
 
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_OldOwnerInvalid.selector));
