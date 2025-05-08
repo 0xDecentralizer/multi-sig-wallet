@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
+import {BytesUtils} from "./BytesUtils.sol";
+
 contract MultiSigWallet {
     address[] private owners;
     uint8 public immutable requireConfirmations;
-
+    
+    using BytesUtils for bytes;
+    
     mapping(address => bool) public isOwner;
     mapping(address => mapping(uint256 => bool)) public isConfirmed;
 
@@ -22,7 +26,6 @@ contract MultiSigWallet {
     error MSW_EmptyOwnersList();
     error MSW_ConfirmationsExceedOwnersCount();
     error MSW_InvalidFunctionSelector();
-    error MSW_InvalidSliceStart();
 
     event TransactionSubmited(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data);
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
@@ -126,7 +129,7 @@ contract MultiSigWallet {
         }
 
         if (selector == this.submitAddOwner.selector) {
-            address newOwner = abi.decode(sliceBytes(txData, 4), (address));
+            address newOwner = abi.decode(txData.sliceBytes(4), (address));
 
             isOwner[newOwner] = true;
             owners.push(newOwner);
@@ -135,7 +138,7 @@ contract MultiSigWallet {
             emit OwnerAdded(newOwner);
 
         } else if (selector == this.submitRemoveOwner.selector) {
-            address oldOwner = abi.decode(sliceBytes(txData, 4), (address));
+            address oldOwner = abi.decode(txData.sliceBytes(4), (address));
 
             isOwner[oldOwner] = false;
 
@@ -194,15 +197,5 @@ contract MultiSigWallet {
         }));
 
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
-    }
-
-    function sliceBytes(bytes memory data, uint256 start) internal pure returns (bytes memory) {
-        if(start > data.length) revert MSW_InvalidSliceStart();
-
-        bytes memory result = new bytes(data.length - start);
-        for (uint256 i = start; i < data.length; i++) {
-            result[i - start] = data[i];
-        }
-        return result;
     }
 }
