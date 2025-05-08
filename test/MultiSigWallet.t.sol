@@ -401,6 +401,25 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitRemoveOwner(oldOwner);
     }
 
+    function test_RemoveOwnerTx() public {
+        address owner = owners[0];
+        address oldOwner = owners[1];
+        uint256 txIndex = 0;
+        bytes memory _data = abi.encodeWithSelector(MultiSigWallet.submitRemoveOwner.selector, oldOwner);
+
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true);
+        emit TransactionSubmited(owner, txIndex, address(multiSigWallet), 0, _data);
+        multiSigWallet.submitRemoveOwner(oldOwner);
+
+        (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations) = multiSigWallet.transactions(txIndex);
+        assertEq(to, address(multiSigWallet));
+        assertEq(value, 0);
+        assertEq(data, _data);
+        assertEq(executed, false);
+        assertEq(numConfirmations, 0);
+    }
+
     function testRevert_UnsigningNonExistentTx() public {
         address owner = owners[0];
         uint256 txIndex = 0;
