@@ -16,6 +16,8 @@ contract MultiSigWalletTest is Test {
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
     event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
     event OwnerAdded(address indexed newOwner);
+    event OwnerRemoved(address indexed oldOwner);
+    
     function setUp() public {
         owners = new address[](3);
         owners[0] = address(0x1);
@@ -314,6 +316,33 @@ contract MultiSigWalletTest is Test {
 
         assertEq(multiSigWallet.numOwners(), numOwnersBeforeTx + 1);
         assertEq(multiSigWallet.isOwner(newOwner), true);
+
+        (,,, bool executed, ) = multiSigWallet.transactions(txIndex);
+        assertEq(executed, true);
+    }
+
+    function test_ExecuteRemoveOwnerTxWithSufficientFund() public {
+        address owner1 = owners[0];
+        address owner2 = owners[1];
+        address oldOwner = owners[2];
+        uint256 txIndex = 0;
+        uint256 numOwnersBeforeTx = multiSigWallet.numOwners();
+
+        vm.prank(owner1);
+        multiSigWallet.submitRemoveOwner(oldOwner);
+
+        vm.prank(owner1);
+        multiSigWallet.signTransaction(txIndex);
+        vm.prank(owner2);
+        multiSigWallet.signTransaction(txIndex);
+
+        vm.prank(owner1);
+        vm.expectEmit(true, false, false, false);
+        emit OwnerRemoved(oldOwner);
+        multiSigWallet.executeTransaction(txIndex);
+
+        assertEq(multiSigWallet.numOwners(), numOwnersBeforeTx - 1);
+        assertEq(multiSigWallet.isOwner(oldOwner), false);
 
         (,,, bool executed, ) = multiSigWallet.transactions(txIndex);
         assertEq(executed, true);
