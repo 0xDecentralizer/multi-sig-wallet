@@ -30,6 +30,7 @@ contract MultiSigWallet {
     event OwnerAdded(address indexed owner);
     event OwnerRemoved(address indexed owner);
     event RequirementChanged(uint8 required);
+    event BytesSliceError(bytes data, uint256 start);
 
     constructor(address[] memory _owners, uint8 _requireConfirmations) {
         if(_owners.length == 0) revert MSW_EmptyOwnersList();
@@ -195,7 +196,7 @@ contract MultiSigWallet {
     }
 
     function sliceBytes(bytes memory data, uint256 start) internal pure returns (bytes memory) {
-        require(start <= data.length, "Invalid slice start");
+        if(start > data.length) revert MSW_InvalidSliceStart();
 
         bytes memory result = new bytes(data.length - start);
         for (uint256 i = start; i < data.length; i++) {
