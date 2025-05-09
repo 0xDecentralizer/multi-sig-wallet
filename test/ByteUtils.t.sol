@@ -37,7 +37,7 @@ contract BytesUtilsTest is Test {
         this.callSliceOutOfBounds(original);
     }
 
-    function callSliceOutOfBounds(bytes memory data) external pure{
+    function callSliceOutOfBounds(bytes memory data) external pure {
         data.sliceBytes(3);
     }
 }
