@@ -376,33 +376,32 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitAddOwner(newOwner);
     }
 
-    
     function testRevert_AddOwnerTxWithDuplicateOwner() public {
         address owner = owners[0];
         address newOwner = owners[1];
-
+        
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_DuplicateOwner.selector));
         multiSigWallet.submitAddOwner(newOwner);
     }
-
+    
     function testRevert_NonOwnerCannotAddOwnerTx() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
-
+        
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
         multiSigWallet.submitAddOwner(address(0x4));
     }
-
+    
     function testRevert_AddOwnerTxWithInsufficientConfirmations() public {
         address owner = owners[0];
         address newOwner = address(0x4);
         uint256 txIndex = 0;
-
+        
         vm.prank(owner);
         multiSigWallet.submitAddOwner(newOwner);
-
+        
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
@@ -415,25 +414,37 @@ contract MultiSigWalletTest is Test {
         
         vm.prank(owner);
         multiSigWallet.submitRemoveOwner(oldOwner);
-
+        
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
-
+    
     function testRevert_RemoveOwnerTxWithInvalidOwnerAddress() public {
         address owner = owners[0];
         address oldOwner = address(0xDe);
-
+        
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_OldOwnerInvalid.selector));
         multiSigWallet.submitRemoveOwner(oldOwner);
     }
+    
+    function testRevert_RemoveOwnerTxWithConfirmationsExceedOwnersCount() public {
+        address owner = owners[0]; // 0x1
+        address oldOwner = owners[1]; // 0x2
 
+        owners.pop(); // owners.length = 2 && requireConfirmations = 2
+        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
+        multiSigWallet.submitRemoveOwner(oldOwner);
+    }        
+        
     function testRevert_NonOwnerCannotRemoveOwner() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
-
+        
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
         multiSigWallet.submitRemoveOwner(owners[1]);
