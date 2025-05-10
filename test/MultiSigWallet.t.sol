@@ -35,12 +35,12 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
         vm.prank(owner1);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
         vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
     }
 
     function test_emptyOwners() public {
@@ -85,17 +85,17 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
     }
 
-    function testRevert_NonOwnerCannotCallSetTransaction() public {
+    function testRevert_NonOwnerCannotCallSubmitTransaction() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
 
-        multiSigWallet.setTransaction(address(0x111), 1, "");
+        multiSigWallet.submitTransaction(address(0x111), 1, "");
     }
 
-    function test_setTransactionByOwner() public {
+    function test_submitTransactionByOwner() public {
         address owner = owner1;
         address target = address(0xDe);
         uint256 value = 1 ether;
@@ -105,7 +105,7 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
         emit TransactionSubmited(owner, txIndex, target, value, data);
-        multiSigWallet.setTransaction(target, value, data);
+        multiSigWallet.submitTransaction(target, value, data);
 
         // Validate state
         (address to, uint256 txValue, bytes memory txData, bool executed, uint256 numConfirmations) =
@@ -123,7 +123,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
     }
 
     function testRevert_AnExecutedTxCannotBeSign() public {
@@ -136,7 +136,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
     }
 
     function testRevert_ownerCannotSignATxMoreThanOnce() public {
@@ -144,16 +144,16 @@ contract MultiSigWalletTest is Test {
 
         // Initial frist transaction with 0 index by one of the owners
         vm.prank(owner1);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
         // Sign the transaction by one of the owners
         vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
 
         // Sign the EXACT transaction again
         vm.prank(owner2);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadySigned.selector));
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
     }
 
     function testRevert_NonOwnerCannotSignATx() public {
@@ -163,22 +163,22 @@ contract MultiSigWalletTest is Test {
 
         // Initial a transaction by one of the owners
         vm.prank(owners[0]);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
         // Sign the transaction by a non-owner
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
     }
 
-    function test_signTransactionByOwner() public {
+    function test_confirmTransactionByOwner() public {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
         vm.prank(owner1);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
 
         (,,,, uint256 numConfirmations) = multiSigWallet.transactions(0);
         assertEq(numConfirmations, 1);
@@ -213,7 +213,7 @@ contract MultiSigWalletTest is Test {
 
         // Set a transaction with - It has 0 confirmations
         vm.prank(owner1);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
@@ -225,13 +225,13 @@ contract MultiSigWalletTest is Test {
 
         // Set a transaction with - It has 0 confirmations
         vm.prank(owner1);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
         // Confirm the transaction
         vm.prank(owner1);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
         vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InsufficientBalance.selector));
@@ -244,13 +244,13 @@ contract MultiSigWalletTest is Test {
 
         // Set a transaction with - It has 0 confirmations
         vm.prank(owner1);
-        multiSigWallet.setTransaction(target, 1 wei, "0x1234"); // There is no function with this signature
+        multiSigWallet.submitTransaction(target, 1 wei, "0x1234"); // There is no function with this signature
 
         // Confirm the transaction
         vm.prank(owner1);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
         vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
 
         vm.deal(address(multiSigWallet), 1 ether);
 
@@ -291,9 +291,9 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitAddOwner(newOwner);
 
         vm.prank(owner1);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
         vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
 
         vm.prank(owner1);
         vm.expectEmit(true, false, false, false);
@@ -316,9 +316,9 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitRemoveOwner(oldOwner);
 
         vm.prank(owner1);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
         vm.prank(owner2);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
 
         vm.prank(owner1);
         vm.expectEmit(true, false, false, false);
@@ -447,15 +447,15 @@ contract MultiSigWalletTest is Test {
         assertEq(numConfirmations, 0);
     }
 
-    function testRevert_UnsigningNonExistentTx() public {
+    function testRevert_RevokingNonExistentTx() public {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
-        multiSigWallet.unsignTransaction(txIndex);
+        multiSigWallet.revokeConfirmation(txIndex);
     }
 
-    function testRevert_UnsigningExecutedTx() public {
+    function testRevert_RevokingExecutedTx() public {
         uint256 txIndex = 0;
 
         setupTxWithTwoSignatures(); // Set the first transaction with 0 index
@@ -465,23 +465,23 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
-        multiSigWallet.unsignTransaction(txIndex);
+        multiSigWallet.revokeConfirmation(txIndex);
     }
 
-    function testRevert_UnsigningNotSignedTx() public {
+    function testRevert_RevokingNotSignedTx() public {
         uint256 txIndex = 0;
 
         // Create transaction but don't sign it
         vm.prank(owner1);
-        multiSigWallet.setTransaction(address(0x1234), 1 wei, "");
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "");
 
-        // Try to unsign without signing first
+        // Try to revoke without signing first
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxNotSigned.selector));
-        multiSigWallet.unsignTransaction(txIndex);
+        multiSigWallet.revokeConfirmation(txIndex);
     }
 
-    function testRevert_NonOwnerUnsigningTx() public {
+    function testRevert_NonOwnerRevokingTx() public {
         address nonOwner = address(0x1234);
         uint256 txIndex = 0;
 
@@ -489,23 +489,23 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
-        multiSigWallet.unsignTransaction(txIndex);
+        multiSigWallet.revokeConfirmation(txIndex);
     }
 
-    function test_UnsigningTx() public {
+    function test_RevokingTx() public {
         uint256 txIndex = 0;
 
         setupTxWithTwoSignatures(); // Set the first transaction with 0 index
 
         // Owner1 has signed transactions[0] before in setupTxWithTwoSignatures() function
         vm.prank(owner1);
-        multiSigWallet.unsignTransaction(txIndex);
+        multiSigWallet.revokeConfirmation(txIndex);
 
         bool isConfirmed = multiSigWallet.isConfirmed(owner1, txIndex);
         assertEq(isConfirmed, false);
 
         (,,,, uint256 numConfirmations) = multiSigWallet.transactions(0);
-        assertEq(numConfirmations, 1); // Before unsigning, this Tx had 2 signs and now have 1
+        assertEq(numConfirmations, 1); // Before revoking, this Tx had 2 signs and now have 1
     }
 
     function testEmit_SubmitTransaction() public {
@@ -518,7 +518,7 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
         emit TransactionSubmited(owner, txIndex, target, value, data);
-        multiSigWallet.setTransaction(target, value, data);
+        multiSigWallet.submitTransaction(target, value, data);
     }
 
     function testEmit_ConfirmTransaction() public {
@@ -531,12 +531,12 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
         emit TransactionSubmited(owner, txIndex, target, value, data);
-        multiSigWallet.setTransaction(target, value, data);
+        multiSigWallet.submitTransaction(target, value, data);
 
         vm.prank(owner);
         vm.expectEmit(true, true, false, false);
         emit TransactionConfirmed(owner, txIndex);
-        multiSigWallet.signTransaction(txIndex);
+        multiSigWallet.confirmTransaction(txIndex);
     }
 
     function testEmit_RevokeConfirmation() public {
@@ -547,7 +547,7 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner1);
         vm.expectEmit(true, true, false, false);
         emit ConfirmationRevoked(owner1, txIndex);
-        multiSigWallet.unsignTransaction(txIndex);
+        multiSigWallet.revokeConfirmation(txIndex);
     }
 
     function testEmit_ExecuteTransaction() public {

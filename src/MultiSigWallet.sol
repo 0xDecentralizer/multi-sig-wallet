@@ -85,7 +85,7 @@ contract MultiSigWallet {
         return owners;
     }
 
-    function setTransaction(address _to, uint256 _value, bytes memory _data) external onlyOwner {
+    function submitTransaction(address _to, uint256 _value, bytes memory _data) external onlyOwner {
         Transaction memory newTransaction =
             Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
         transactions.push(newTransaction);
@@ -93,7 +93,7 @@ contract MultiSigWallet {
         emit TransactionSubmited(msg.sender, transactions.length - 1, _to, _value, _data);
     }
 
-    function signTransaction(uint256 _txIndex) external onlyOwner {
+    function confirmTransaction(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if (isConfirmed[msg.sender][_txIndex]) revert MSW_TxAlreadySigned();
@@ -104,7 +104,7 @@ contract MultiSigWallet {
         emit TransactionConfirmed(msg.sender, _txIndex);
     }
 
-    function unsignTransaction(uint256 _txIndex) external onlyOwner {
+    function revokeConfirmation(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if (!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
@@ -170,7 +170,7 @@ contract MultiSigWallet {
         if (isOwner[_owner]) revert MSW_DuplicateOwner();
 
         bytes memory data = abi.encodeWithSelector(this.submitAddOwner.selector, _owner);
-
+        
         transactions.push(Transaction({to: address(this), value: 0, data: data, executed: false, numConfirmations: 0}));
 
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
@@ -186,4 +186,6 @@ contract MultiSigWallet {
 
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
     }
+
+    // function 
 }
