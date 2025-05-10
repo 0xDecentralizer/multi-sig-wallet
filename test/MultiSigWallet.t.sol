@@ -564,9 +564,9 @@ contract MultiSigWalletTest is Test {
         setupTxWithTwoSignatures();
 
         multiSigWallet.getTransaction(txIndex);
-        
+
         (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations) =
-        multiSigWallet.transactions(txIndex);
+            multiSigWallet.transactions(txIndex);
 
         assertEq(to, address(0x1234));
         assertEq(value, 1 wei);

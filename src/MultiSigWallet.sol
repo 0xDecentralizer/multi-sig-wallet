@@ -32,7 +32,7 @@ contract MultiSigWallet {
     event Deposited(address indexed sender, uint256 value);
     event OwnerAdded(address indexed owner);
     event OwnerRemoved(address indexed owner);
-    event RequirementChanged(uint8 required);
+    event RequireConfirmationsChanged(uint8 indexed oldReqConf, uint8 indexed newReqConf);
 
     // Structs
     struct Transaction {
@@ -45,7 +45,7 @@ contract MultiSigWallet {
 
     // State Variables
     address[] private owners;
-    uint8 public immutable requireConfirmations;
+    uint8 public requireConfirmations;
     mapping(address => bool) public isOwner;
     mapping(address => mapping(uint256 => bool)) public isConfirmed;
     Transaction[] public transactions;
@@ -143,8 +143,15 @@ contract MultiSigWallet {
                 }
             }
 
-            transaction.executed = true;
+            tran    saction.executed = true;
             emit OwnerRemoved(oldOwner);
+        } else if (selector == this.changeRequireConfirmations.selector) {
+            uint8 oldReqConf = requireConfirmations;
+            uint8 newReqConf = abi.decode(txData.sliceBytes(4), (uint8));
+
+            requireConfirmations = newReqConf;
+            
+            emit RequireConfirmationsChanged(oldReqConf, newReqConf);
         } else {
             transaction.executed = true;
 
@@ -162,7 +169,7 @@ contract MultiSigWallet {
         if (isOwner[_owner]) revert MSW_DuplicateOwner();
 
         bytes memory data = abi.encodeWithSelector(this.submitAddOwner.selector, _owner);
-        
+
         transactions.push(Transaction({to: address(this), value: 0, data: data, executed: false, numConfirmations: 0}));
 
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
@@ -179,6 +186,17 @@ contract MultiSigWallet {
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
     }
 
+    function changeRequireConfirmations(uint8 _newReqConf) external {
+        if (owners.length < _newReqConf) revert MSW_ConfirmationsExceedOwnersCount();
+
+        bytes memory data = 
+        abi.encodeWithSelector(this.changeRequireConfirmations.selector, _newReqConf);
+
+        transactions.push(Transaction({to: address(this), value: 0, data: data, executed: false, numConfirmations: 0}));
+
+        emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
+    }
+
     // View Functions
     function numOwners() public view returns (uint256) {
         return owners.length;
@@ -188,7 +206,7 @@ contract MultiSigWallet {
         return owners;
     }
 
-    function getTransaction(uint256 _txIndex) public view returns(Transaction memory) {
+    function getTransaction(uint256 _txIndex) public view returns (Transaction memory) {
         return transactions[_txIndex];
     }
 }
