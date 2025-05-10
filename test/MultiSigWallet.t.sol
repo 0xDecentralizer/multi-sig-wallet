@@ -558,4 +558,20 @@ contract MultiSigWalletTest is Test {
         emit TransactionExecuted(owner1, txIndex);
         multiSigWallet.executeTransaction(txIndex);
     }
+
+    function test_getTransaction() public {
+        uint256 txIndex = 0;
+        setupTxWithTwoSignatures();
+
+        multiSigWallet.getTransaction(txIndex);
+        
+        (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations) =
+        multiSigWallet.transactions(txIndex);
+
+        assertEq(to, address(0x1234));
+        assertEq(value, 1 wei);
+        assertEq(data, "");
+        assertEq(executed, false);
+        assertEq(numConfirmations, 2);
+    }
 }

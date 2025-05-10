@@ -187,4 +187,8 @@ contract MultiSigWallet {
     function getOwners() public view returns (address[] memory) {
         return owners;
     }
+
+    function getTransaction(uint256 _txIndex) public view returns(Transaction memory) {
+        return transactions[_txIndex];
+    }
 }
