@@ -4,14 +4,9 @@ pragma solidity ^0.8.22;
 import {BytesUtils} from "./BytesUtils.sol";
 
 contract MultiSigWallet {
-    address[] private owners;
-    uint8 public immutable requireConfirmations;
-
     using BytesUtils for bytes;
 
-    mapping(address => bool) public isOwner;
-    mapping(address => mapping(uint256 => bool)) public isConfirmed;
-
+    // Errors
     error MSW_NotOwner();
     error MSW_OldOwnerInvalid();
     error MSW_TxDoesNotExist();
@@ -27,6 +22,7 @@ contract MultiSigWallet {
     error MSW_ConfirmationsExceedOwnersCount();
     error MSW_InvalidFunctionSelector();
 
+    // Events
     event TransactionSubmited(
         address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data
     );
@@ -38,6 +34,29 @@ contract MultiSigWallet {
     event OwnerRemoved(address indexed owner);
     event RequirementChanged(uint8 required);
 
+    // Structs
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes data;
+        bool executed;
+        uint8 numConfirmations;
+    }
+
+    // State Variables
+    address[] private owners;
+    uint8 public immutable requireConfirmations;
+    mapping(address => bool) public isOwner;
+    mapping(address => mapping(uint256 => bool)) public isConfirmed;
+    Transaction[] public transactions;
+
+    // Modifiers
+    modifier onlyOwner() {
+        if (!isOwner[msg.sender]) revert MSW_NotOwner();
+        _;
+    }
+
+    // Constructor
     constructor(address[] memory _owners, uint8 _requireConfirmations) {
         if (_owners.length == 0) revert MSW_EmptyOwnersList();
         if (_owners.length < _requireConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
@@ -57,34 +76,7 @@ contract MultiSigWallet {
         requireConfirmations = _requireConfirmations;
     }
 
-    modifier onlyOwner() {
-        if (!isOwner[msg.sender]) revert MSW_NotOwner();
-        _;
-    }
-
-    // modifier notExecuted(uint256 _txIndex) {
-    //     if(transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
-    //     _;
-    // }
-
-    struct Transaction {
-        address to;
-        uint256 value;
-        bytes data;
-        bool executed;
-        uint8 numConfirmations;
-    }
-
-    Transaction[] public transactions;
-
-    function numOwners() public view returns (uint256) {
-        return owners.length;
-    }
-
-    function getOwners() public view returns (address[] memory) {
-        return owners;
-    }
-
+    // External Functions
     function submitTransaction(address _to, uint256 _value, bytes memory _data) external onlyOwner {
         Transaction memory newTransaction =
             Transaction({to: _to, value: _value, data: _data, executed: false, numConfirmations: 0});
@@ -115,7 +107,7 @@ contract MultiSigWallet {
         emit ConfirmationRevoked(msg.sender, _txIndex);
     }
 
-    function executeTransaction(uint256 _txIndex) public onlyOwner {
+    function executeTransaction(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
 
         Transaction storage transaction = transactions[_txIndex];
@@ -187,5 +179,12 @@ contract MultiSigWallet {
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
     }
 
-    // function 
+    // View Functions
+    function numOwners() public view returns (uint256) {
+        return owners.length;
+    }
+
+    function getOwners() public view returns (address[] memory) {
+        return owners;
+    }
 }
