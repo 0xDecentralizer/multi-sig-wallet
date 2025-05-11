@@ -24,7 +24,7 @@ contract MultiSigWalletTest is Test {
     event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
     event OwnerAdded(address indexed newOwner);
     event OwnerRemoved(address indexed oldOwner);
-    event RequireConfirmationsChanged(uint8 oldRequireConfirmations, uint8 newRequireConfirmations);
+    event RequireConfirmationsChanged(uint8 indexed oldReqConf, uint8 indexed newReqConf);
 
     // Setup
     function setUp() public {
