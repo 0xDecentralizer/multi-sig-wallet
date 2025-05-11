@@ -24,6 +24,7 @@ contract MultiSigWalletTest is Test {
     event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
     event OwnerAdded(address indexed newOwner);
     event OwnerRemoved(address indexed oldOwner);
+    event RequireConfirmationsChanged(uint8 oldRequireConfirmations, uint8 newRequireConfirmations);
 
     // Setup
     function setUp() public {
@@ -646,11 +647,11 @@ contract MultiSigWalletTest is Test {
 
         // Execute the change
         vm.prank(owner1);
+        vm.expectEmit(true, true, false, false);
+        emit RequireConfirmationsChanged(2, newRequireConfirmations);
         multiSigWallet.executeTransaction(changeReqConfTxIndex);
 
         // Verify the change
         assertEq(multiSigWallet.requireConfirmations(), newRequireConfirmations);
     }
-
-
 }
