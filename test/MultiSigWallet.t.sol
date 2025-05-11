@@ -6,18 +6,24 @@ import {MultiSigWallet} from "../src/MultiSigWallet.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 
+/// @title MultiSigWalletTest
+/// @notice Test suite for the MultiSigWallet contract
 contract MultiSigWalletTest is Test {
-    // Constants and State Variables
+    // ============ Constants and State Variables ============
     MultiSigWallet multiSigWallet;
     address owner1 = address(0x1);
     address owner2 = address(0x2);
     address owner3 = address(0x3);
     address[] owners;
-    uint8 requireConfirmations = 2;
+    uint8 requiredConfirmations = 2;
 
-    // Events
-    event TransactionSubmited(
-        address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data
+    // ============ Events ============
+    event TransactionSubmitted(
+        address indexed owner, 
+        uint256 indexed txIndex, 
+        address indexed to, 
+        uint256 value, 
+        bytes data
     );
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
@@ -26,16 +32,16 @@ contract MultiSigWalletTest is Test {
     event OwnerRemoved(address indexed oldOwner);
     event RequireConfirmationsChanged(uint8 indexed oldReqConf, uint8 indexed newReqConf);
 
-    // Setup
+    // ============ Setup ============
     function setUp() public {
         owners = new address[](3);
         owners[0] = owner1;
         owners[1] = owner2;
         owners[2] = owner3;
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
-    // Helper Functions
+    // ============ Helper Functions ============
     function setupTxWithTwoSignatures() public {
         uint256 txIndex = 0;
 
@@ -48,12 +54,12 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.confirmTransaction(txIndex);
     }
 
-    // Constructor Tests
+    // ============ Constructor Tests ============
     function test_initateWallet() public {
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
 
-        assertEq(multiSigWallet.requireConfirmations(), 2);
-        assertEq(multiSigWallet.numOwners(), 3);
+        assertEq(multiSigWallet.requiredConfirmations(), 2);
+        assertEq(multiSigWallet.getOwnerCount(), 3);
 
         address[] memory walletOwners = multiSigWallet.getOwners();
 
@@ -69,29 +75,29 @@ contract MultiSigWalletTest is Test {
     function test_emptyOwners() public {
         owners = new address[](0);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_EmptyOwnersList.selector));
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
-    function test_requireConfirmations() public {
+    function test_requiredConfirmations() public {
         owners.pop();
         owners.pop();
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_DuplicateOwner.selector));
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
-    function testRevert_ownercannotBeZeroAddress() public {
+    function testRevert_ownerCannotBeZeroAddress() public {
         owners.push(address(0));
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidOwnerAddress.selector));
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
-    // Transaction Submission Tests
+    // ============ Transaction Submission Tests ============
     function testRevert_NonOwnerCannotCallSubmitTransaction() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
@@ -110,7 +116,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmited(owner, txIndex, target, value, data);
+        emit TransactionSubmitted(owner, txIndex, target, value, data);
         multiSigWallet.submitTransaction(target, value, data);
 
         // Validate state
@@ -121,10 +127,10 @@ contract MultiSigWalletTest is Test {
         assertEq(txValue, value, "Transaction value mismatch");
         assertEq(txData, data, "Transaction data mismatch");
         assertEq(executed, false, "Transaction should not be executed yet");
-        assertEq(numConfirmations, 0, "Transaction should start with 0 confimations");
+        assertEq(numConfirmations, 0, "Transaction should start with 0 confirmations");
     }
 
-    // Transaction Confirmation Tests
+    // ============ Transaction Confirmation Tests ============
     function testRevert_ANonExistTxCannotBeSign() public {
         uint256 txIndex = 1;
 
@@ -189,7 +195,7 @@ contract MultiSigWalletTest is Test {
         assertEq(isConfirmed, true);
     }
 
-    // Transaction Execution Tests
+    // ============ Transaction Execution Tests ============
     function testRevert_AnExecutedTxCannotBeExecuted() public {
         uint256 txIndex = 0;
 
@@ -280,11 +286,11 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, true);
     }
 
-    // Owner Management Tests
+    // ============ Owner Management Tests ============
     function test_ExecuteAddOwnerTxWithSufficientFund() public {
         address newOwner = address(0x4);
         uint256 txIndex = 0;
-        uint256 numOwnersBeforeTx = multiSigWallet.numOwners();
+        uint256 numOwnersBeforeTx = multiSigWallet.getOwnerCount();
 
         vm.prank(owner1);
         multiSigWallet.submitAddOwner(newOwner);
@@ -299,7 +305,7 @@ contract MultiSigWalletTest is Test {
         emit OwnerAdded(newOwner);
         multiSigWallet.executeTransaction(txIndex);
 
-        assertEq(multiSigWallet.numOwners(), numOwnersBeforeTx + 1);
+        assertEq(multiSigWallet.getOwnerCount(), numOwnersBeforeTx + 1);
         assertEq(multiSigWallet.isOwner(newOwner), true);
 
         (,,, bool executed,) = multiSigWallet.transactions(txIndex);
@@ -309,7 +315,7 @@ contract MultiSigWalletTest is Test {
     function test_ExecuteRemoveOwnerTxWithSufficientFund() public {
         address oldOwner = owners[2];
         uint256 txIndex = 0;
-        uint256 numOwnersBeforeTx = multiSigWallet.numOwners();
+        uint256 numOwnersBeforeTx = multiSigWallet.getOwnerCount();
 
         vm.prank(owner1);
         multiSigWallet.submitRemoveOwner(oldOwner);
@@ -324,7 +330,7 @@ contract MultiSigWalletTest is Test {
         emit OwnerRemoved(oldOwner);
         multiSigWallet.executeTransaction(txIndex);
 
-        assertEq(multiSigWallet.numOwners(), numOwnersBeforeTx - 1);
+        assertEq(multiSigWallet.getOwnerCount(), numOwnersBeforeTx - 1);
         assertEq(multiSigWallet.isOwner(oldOwner), false);
 
         (,,, bool executed,) = multiSigWallet.transactions(txIndex);
@@ -338,7 +344,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmited(owner1, txIndex, address(multiSigWallet), 0, _data);
+        emit TransactionSubmitted(owner1, txIndex, address(multiSigWallet), 0, _data);
         multiSigWallet.submitAddOwner(newOwner);
 
         (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations) =
@@ -411,7 +417,7 @@ contract MultiSigWalletTest is Test {
         address oldOwner = owners[1];
 
         owners.pop();
-        multiSigWallet = new MultiSigWallet(owners, requireConfirmations);
+        multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
@@ -434,7 +440,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmited(owner1, txIndex, address(multiSigWallet), 0, _data);
+        emit TransactionSubmitted(owner1, txIndex, address(multiSigWallet), 0, _data);
         multiSigWallet.submitRemoveOwner(oldOwner);
 
         (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations) =
@@ -446,7 +452,7 @@ contract MultiSigWalletTest is Test {
         assertEq(numConfirmations, 0);
     }
 
-    // Confirmation Revocation Tests
+    // ============ Confirmation Revocation Tests ============
     function testRevert_RevokingNonExistentTx() public {
         uint256 txIndex = 0;
 
@@ -505,7 +511,7 @@ contract MultiSigWalletTest is Test {
         assertEq(numConfirmations, 1);
     }
 
-    // Event Emission Tests
+    // ============ Event Emission Tests ============
     function testEmit_SubmitTransaction() public {
         address owner = owner1;
         uint256 txIndex = 0;
@@ -515,7 +521,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmited(owner, txIndex, target, value, data);
+        emit TransactionSubmitted(owner, txIndex, target, value, data);
         multiSigWallet.submitTransaction(target, value, data);
     }
 
@@ -528,7 +534,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmited(owner, txIndex, target, value, data);
+        emit TransactionSubmitted(owner, txIndex, target, value, data);
         multiSigWallet.submitTransaction(target, value, data);
 
         vm.prank(owner);
@@ -560,6 +566,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
     }
 
+    // ============ View Function Tests ============
     function test_getTransaction() public {
         uint256 txIndex = 0;
         setupTxWithTwoSignatures();
@@ -586,40 +593,41 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.getTransaction(txIndex);
     }
 
-    function testRevert_changeRequireConfirmationsWithSameValue() public {
-        uint8 newRequireConfirmations = 2;
+    // ============ Required Confirmations Tests ============
+    function testRevert_changeRequiredConfirmationsWithSameValue() public {
+        uint8 newRequiredConfirmations = 2;
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidRequireConfirmations.selector));
-        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+        multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations);
     }
 
-    function testRevert_changeRequireConfirmationsWithInvalidValue_1() public {
-        uint8 newRequireConfirmations = 0;
+    function testRevert_changeRequiredConfirmationsWithInvalidValue_1() public {
+        uint8 newRequiredConfirmations = 0;
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidRequireConfirmations.selector));
-        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+        multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations);
     }
 
-    function testRevert_changeRequireConfirmationsWithInvalidValue_2() public {
-        uint8 newRequireConfirmations = 4; // 4 confirmations are more than the number of owners (3)
+    function testRevert_changeRequiredConfirmationsWithInvalidValue_2() public {
+        uint8 newRequiredConfirmations = 4; // 4 confirmations are more than the number of owners (3)
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
-        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+        multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations);
     }
 
-    function testRevert_NonOwnerCannotChangeRequireConfirmations() public {
+    function testRevert_NonOwnerCannotChangeRequiredConfirmations() public {
         address nonOwner = address(0xDe);
 
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
-        multiSigWallet.changeRequireConfirmations(1);
+        multiSigWallet.changeRequiredConfirmations(1);
     }
 
-    function test_changeRequireConfirmations() public {
-        // First add a new owner to allow increasing require confirmations to 3
+    function test_changeRequiredConfirmations() public {
+        // First add a new owner to allow increasing required confirmations to 3
         vm.startPrank(owner1);
         multiSigWallet.submitAddOwner(address(0x4));
         multiSigWallet.confirmTransaction(0);
@@ -631,12 +639,12 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner1);
         multiSigWallet.executeTransaction(0);
 
-        // Now change require confirmations to 3
-        uint8 newRequireConfirmations = 3;
+        // Now change required confirmations to 3
+        uint8 newRequiredConfirmations = 3;
         uint256 changeReqConfTxIndex = 1;
 
         vm.prank(owner1);
-        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+        multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations);
 
         // Get required confirmations from owners
         vm.prank(owner1);
@@ -648,10 +656,10 @@ contract MultiSigWalletTest is Test {
         // Execute the change
         vm.prank(owner1);
         vm.expectEmit(true, true, false, false);
-        emit RequireConfirmationsChanged(2, newRequireConfirmations);
+        emit RequireConfirmationsChanged(2, newRequiredConfirmations);
         multiSigWallet.executeTransaction(changeReqConfTxIndex);
 
         // Verify the change
-        assertEq(multiSigWallet.requireConfirmations(), newRequireConfirmations);
+        assertEq(multiSigWallet.requiredConfirmations(), newRequiredConfirmations);
     }
 }
