@@ -616,4 +616,41 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
         multiSigWallet.changeRequireConfirmations(1);
     }
+
+    function test_changeRequireConfirmations() public {
+        // First add a new owner to allow increasing require confirmations to 3
+        vm.startPrank(owner1);
+        multiSigWallet.submitAddOwner(address(0x4));
+        multiSigWallet.confirmTransaction(0);
+        vm.stopPrank();
+
+        vm.prank(owner2);
+        multiSigWallet.confirmTransaction(0);
+
+        vm.prank(owner1);
+        multiSigWallet.executeTransaction(0);
+
+        // Now change require confirmations to 3
+        uint8 newRequireConfirmations = 3;
+        uint256 changeReqConfTxIndex = 1;
+
+        vm.prank(owner1);
+        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+
+        // Get required confirmations from owners
+        vm.prank(owner1);
+        multiSigWallet.confirmTransaction(changeReqConfTxIndex);
+
+        vm.prank(owner2);
+        multiSigWallet.confirmTransaction(changeReqConfTxIndex);
+
+        // Execute the change
+        vm.prank(owner1);
+        multiSigWallet.executeTransaction(changeReqConfTxIndex);
+
+        // Verify the change
+        assertEq(multiSigWallet.requireConfirmations(), newRequireConfirmations);
+    }
+
+
 }
