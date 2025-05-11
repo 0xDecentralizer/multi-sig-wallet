@@ -20,6 +20,7 @@ contract MultiSigWallet {
     error MSW_InvalidOwnerAddress();
     error MSW_EmptyOwnersList();
     error MSW_ConfirmationsExceedOwnersCount();
+    error MSW_InvalidRequireConfirmations();
     error MSW_InvalidFunctionSelector();
 
     // Events
@@ -187,7 +188,9 @@ contract MultiSigWallet {
     }
 
     function changeRequireConfirmations(uint8 _newReqConf) external onlyOwner {
-        if (owners.length < _newReqConf) revert MSW_ConfirmationsExceedOwnersCount();
+        if (_newReqConf > owners.length) revert MSW_ConfirmationsExceedOwnersCount();
+        if (_newReqConf < 1) revert MSW_InvalidRequireConfirmations();
+        if (_newReqConf == requireConfirmations) revert MSW_InvalidRequireConfirmations();
 
         bytes memory data = 
         abi.encodeWithSelector(this.changeRequireConfirmations.selector, _newReqConf);

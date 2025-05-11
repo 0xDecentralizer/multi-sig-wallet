@@ -585,7 +585,23 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.getTransaction(txIndex);
     }
 
-    function testRevert_changeRequireConfirmationsWithInvalidValue() public {
+    function testRevert_changeRequireConfirmationsWithSameValue() public {
+        uint8 newRequireConfirmations = 2;
+
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidRequireConfirmations.selector));
+        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+    }
+
+    function testRevert_changeRequireConfirmationsWithInvalidValue_1() public {
+        uint8 newRequireConfirmations = 0;
+
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidRequireConfirmations.selector));
+        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+    }
+
+    function testRevert_changeRequireConfirmationsWithInvalidValue_2() public {
         uint8 newRequireConfirmations = 4; // 4 confirmations are more than the number of owners (3)
 
         vm.prank(owner1);
