@@ -574,4 +574,14 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, false);
         assertEq(numConfirmations, 2);
     }
+
+    function testRevert_getTxWithInvalidTxIndex() public {
+        uint256 txIndex = 1;
+
+        setupTxWithTwoSignatures();
+
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
+        multiSigWallet.getTransaction(txIndex);
+    }
 }

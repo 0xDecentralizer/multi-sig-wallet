@@ -143,7 +143,7 @@ contract MultiSigWallet {
                 }
             }
 
-            tran    saction.executed = true;
+            transaction.executed = true;
             emit OwnerRemoved(oldOwner);
         } else if (selector == this.changeRequireConfirmations.selector) {
             uint8 oldReqConf = requireConfirmations;
@@ -207,6 +207,7 @@ contract MultiSigWallet {
     }
 
     function getTransaction(uint256 _txIndex) public view returns (Transaction memory) {
+        if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         return transactions[_txIndex];
     }
 }
