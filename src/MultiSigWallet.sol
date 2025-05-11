@@ -186,7 +186,7 @@ contract MultiSigWallet {
         emit TransactionSubmited(msg.sender, transactions.length - 1, address(this), 0, data);
     }
 
-    function changeRequireConfirmations(uint8 _newReqConf) external {
+    function changeRequireConfirmations(uint8 _newReqConf) external onlyOwner {
         if (owners.length < _newReqConf) revert MSW_ConfirmationsExceedOwnersCount();
 
         bytes memory data = 

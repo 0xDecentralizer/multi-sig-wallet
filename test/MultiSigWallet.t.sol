@@ -592,4 +592,12 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
     }
+
+    function testRevert_NonOwnerCannotChangeRequireConfirmations() public {
+        address nonOwner = address(0xDe);
+
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        multiSigWallet.changeRequireConfirmations(1);
+    }
 }
