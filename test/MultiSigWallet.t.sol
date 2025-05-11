@@ -584,4 +584,12 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
         multiSigWallet.getTransaction(txIndex);
     }
+
+    function testRevert_changeRequireConfirmationsWithInvalidValue() public {
+        uint8 newRequireConfirmations = 4; // 4 confirmations are more than the number of owners (3)
+
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
+        multiSigWallet.changeRequireConfirmations(newRequireConfirmations);
+    }
 }
