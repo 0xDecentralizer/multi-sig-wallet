@@ -49,6 +49,7 @@ contract MultiSigWallet {
         bytes data;
         bool executed;
         uint8 numConfirmations;
+        uint256 expiration;
     }
 
     // ============ State Variables ============
@@ -92,14 +93,16 @@ contract MultiSigWallet {
     function submitTransaction(
         address _to, 
         uint256 _value, 
-        bytes memory _data
+        bytes memory _data,
+        uint256 _expiration
     ) external onlyOwner {
         Transaction memory newTransaction = Transaction({
             to: _to,
             value: _value,
             data: _data,
             executed: false,
-            numConfirmations: 0
+            numConfirmations: 0,
+            expiration: _expiration
         });
         transactions.push(newTransaction);
 
@@ -172,7 +175,8 @@ contract MultiSigWallet {
             value: 0,
             data: data,
             executed: false,
-            numConfirmations: 0
+            numConfirmations: 0,
+            expiration: 0
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
@@ -191,7 +195,8 @@ contract MultiSigWallet {
             value: 0,
             data: data,
             executed: false,
-            numConfirmations: 0
+            numConfirmations: 0,
+            expiration: 0
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
@@ -214,7 +219,8 @@ contract MultiSigWallet {
             value: 0,
             data: data,
             executed: false,
-            numConfirmations: 0
+            numConfirmations: 0,
+            expiration: 0
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
