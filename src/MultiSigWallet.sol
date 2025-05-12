@@ -164,7 +164,7 @@ contract MultiSigWallet {
 
     /// @notice Submit a transaction to add a new owner
     /// @param _newOwner The address of the new owner to add
-    function submitAddOwner(address _newOwner) external onlyOwner {
+    function submitAddOwner(address _newOwner, uint256 _expiration) external onlyOwner {
         if (_newOwner == address(0)) revert MSW_InvalidOwnerAddress();
         if (isOwner[_newOwner]) revert MSW_DuplicateOwner();
 
@@ -176,7 +176,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: 0
+            expiration: _expiration
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
@@ -184,7 +184,7 @@ contract MultiSigWallet {
 
     /// @notice Submit a transaction to remove an owner
     /// @param _ownerToRemove The address of the owner to remove
-    function submitRemoveOwner(address _ownerToRemove) external onlyOwner {
+    function submitRemoveOwner(address _ownerToRemove, uint256 _expiration) external onlyOwner {
         if (!isOwner[_ownerToRemove]) revert MSW_OldOwnerInvalid();
         if (owners.length - 1 < requiredConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
 
@@ -196,7 +196,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: 0
+            expiration: _expiration
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
@@ -204,7 +204,7 @@ contract MultiSigWallet {
 
     /// @notice Submit a transaction to change the required number of confirmations
     /// @param _newRequiredConfirmations The new number of required confirmations
-    function changeRequiredConfirmations(uint8 _newRequiredConfirmations) external onlyOwner {
+    function changeRequiredConfirmations(uint8 _newRequiredConfirmations, uint256 _expiration) external onlyOwner {
         if (_newRequiredConfirmations > owners.length) revert MSW_ConfirmationsExceedOwnersCount();
         if (_newRequiredConfirmations < 1) revert MSW_InvalidRequireConfirmations();
         if (_newRequiredConfirmations == requiredConfirmations) revert MSW_InvalidRequireConfirmations();
@@ -220,7 +220,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: 0
+            expiration: _expiration
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
