@@ -25,6 +25,7 @@ contract MultiSigWallet {
     error MSW_ConfirmationsExceedOwnersCount();
     error MSW_InvalidRequireConfirmations();
     error MSW_InvalidFunctionSelector();
+    error MSW_TransactionExpired();
 
     // ============ Events ============
     event TransactionSubmitted(
@@ -32,7 +33,8 @@ contract MultiSigWallet {
         uint256 indexed txIndex, 
         address indexed to, 
         uint256 value, 
-        bytes data
+        bytes data,
+        uint256 expiration
     );
     event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
     event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
@@ -106,7 +108,7 @@ contract MultiSigWallet {
         });
         transactions.push(newTransaction);
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, _to, _value, _data);
+        emit TransactionSubmitted(msg.sender, transactions.length - 1, _to, _value, _data, _expiration);
     }
 
     /// @notice Confirm a transaction
@@ -139,6 +141,7 @@ contract MultiSigWallet {
     /// @param _txIndex The index of the transaction to execute
     function executeTransaction(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
+        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired(); // need to test this
 
         Transaction storage transaction = transactions[_txIndex];
 
@@ -179,7 +182,7 @@ contract MultiSigWallet {
             expiration: _expiration
         }));
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
+        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
     }
 
     /// @notice Submit a transaction to remove an owner
@@ -199,7 +202,7 @@ contract MultiSigWallet {
             expiration: _expiration
         }));
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
+        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
     }
 
     /// @notice Submit a transaction to change the required number of confirmations
@@ -223,7 +226,7 @@ contract MultiSigWallet {
             expiration: _expiration
         }));
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data);
+        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
     }
 
     // ============ Internal Functions ============
