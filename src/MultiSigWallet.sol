@@ -117,6 +117,7 @@ contract MultiSigWallet {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if (isConfirmed[msg.sender][_txIndex]) revert MSW_TxAlreadySigned();
+        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired(); // need to test this
 
         transactions[_txIndex].numConfirmations += 1;
         isConfirmed[msg.sender][_txIndex] = true;
@@ -130,6 +131,7 @@ contract MultiSigWallet {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if (!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
+        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired(); // need to test this
 
         transactions[_txIndex].numConfirmations -= 1;
         isConfirmed[msg.sender][_txIndex] = false;
@@ -179,7 +181,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // test it
+            expiration: block.timestamp + _expiration // need to test this
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
@@ -199,7 +201,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // test it
+            expiration: block.timestamp + _expiration // need to test this
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
@@ -223,7 +225,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // test it
+            expiration: block.timestamp + _expiration // need to test this
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
