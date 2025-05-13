@@ -104,7 +104,7 @@ contract MultiSigWallet {
             data: _data,
             executed: false,
             numConfirmations: 0,
-            expiration: _expiration
+            expiration: block.timestamp + _expiration // test it
         });
         transactions.push(newTransaction);
 
@@ -179,7 +179,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: _expiration
+            expiration: block.timestamp + _expiration // test it
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
@@ -199,7 +199,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: _expiration
+            expiration: block.timestamp + _expiration // test it
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
@@ -223,7 +223,7 @@ contract MultiSigWallet {
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: _expiration
+            expiration: block.timestamp + _expiration // test it
         }));
 
         emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
@@ -273,9 +273,9 @@ contract MultiSigWallet {
         uint256 _txIndex, 
         Transaction storage transaction
     ) internal {
-        transaction.executed = true;
-
         if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
+        
+        transaction.executed = true;
 
         (bool success,) = transaction.to.call{value: transaction.value}(txData);
         if (!success) revert MSW_TransactionFailed();
