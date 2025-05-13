@@ -171,12 +171,11 @@ contract MultiSigWalletTest is Test {
 
     function testRevert_ExpiredTxCannotBeSigned() public {
         uint256 txIndex = 0;
-        uint256 newExpirationTime = 1 seconds;
 
-        vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", newExpirationTime);
+            vm.prank(owner1);
+            multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
 
-        vm.warp(block.timestamp + 2);
+        vm.warp(block.timestamp + 2 weeks);
         vm.prank(owner1);
         vm.expectRevert(MultiSigWallet.MSW_TransactionExpired.selector);
         multiSigWallet.confirmTransaction(txIndex);
@@ -516,16 +515,13 @@ contract MultiSigWalletTest is Test {
 
     function testRevert_ExpiredTxCannotBeRevoked() public {
         uint256 txIndex = 0;
-        uint256 newExpirationTime = 1 seconds;
 
-        vm.startPrank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", newExpirationTime);
-        multiSigWallet.confirmTransaction(txIndex);
+        setupTxWithTwoSignatures();
         
-        vm.warp(block.timestamp + 2 seconds);
+        vm.prank(owner1);
+        vm.warp(block.timestamp + 2 weeks);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionExpired.selector));
         multiSigWallet.revokeConfirmation(txIndex);
-        vm.stopPrank();
     }
 
     function testRevert_NonOwnerRevokingTx() public {
