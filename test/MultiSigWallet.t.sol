@@ -503,6 +503,20 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.revokeConfirmation(txIndex);
     }
 
+    function testRevert_CannotRevokeExpiredTx() public {
+        uint256 txIndex = 0;
+        uint256 newExpirationTime = 1 seconds;
+
+        vm.startPrank(owner1);
+        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", newExpirationTime);
+        multiSigWallet.confirmTransaction(txIndex);
+        
+        vm.warp(block.timestamp + 2 seconds);
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionExpired.selector));
+        multiSigWallet.revokeConfirmation(txIndex);
+        vm.stopPrank();
+    }
+
     function testRevert_NonOwnerRevokingTx() public {
         address nonOwner = address(0x1234);
         uint256 txIndex = 0;
