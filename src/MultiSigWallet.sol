@@ -288,12 +288,12 @@ contract MultiSigWallet {
         
         if (transaction.token != address(0x0)) {
             if (transaction.value > IERC20(transaction.token).balanceOf(address(this))) revert MSW_InsufficientBalance();
-            (bool success,/*, bytes memory data*/) = transaction.token.call(abi.encodeWithSelector(
+            (bool success, bytes memory data) = transaction.token.call(abi.encodeWithSelector(
                 IERC20.transfer.selector,
                 transaction.to,
                 transaction.value
             ));
-            if (!success /*|| (data.length != 0 && abi.decode(data, (bool)))*/) revert MSW_TransactionFailed();
+            if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert MSW_TransactionFailed();
 
             // bool success = IERC20(transaction.token).transfer(transaction.to, transaction.value);
             // // bytes memory data = success ? abi.encode(true) : "";
