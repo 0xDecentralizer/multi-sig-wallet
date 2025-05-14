@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {MultiSigWallet} from "../src/MultiSigWallet.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {MockERC20} from "../src/MockERC20.sol";
 
 /// @title MultiSigWalletTest
 /// @notice Test suite for the MultiSigWallet contract
@@ -313,6 +314,34 @@ contract MultiSigWalletTest is Test {
         (,,,, bool executed,,) = multiSigWallet.transactions(txIndex);
 
         assertEq(executed, true);
+    }
+
+    function test_ExecuteERC20TxWithSufficientFund() public {
+        address ERC20Token;
+        uint256 txIndex = 0;
+        address target = address(0x1234);
+        uint256 value = 1 ether;
+        bytes memory data = "";
+
+        // Deploy mock ERC20 token
+        MockERC20 mockToken = new MockERC20();
+        ERC20Token = address(mockToken);
+        
+        // Fund the multisig with tokens
+        mockToken.mint(address(multiSigWallet), 100 ether);
+
+        vm.startPrank(owner1);
+        multiSigWallet.submitTransaction(ERC20Token, target, value, data, expirationTime);
+        multiSigWallet.confirmTransaction(txIndex);
+        vm.stopPrank();
+        
+        vm.startPrank(owner2);
+        multiSigWallet.confirmTransaction(txIndex);
+        multiSigWallet.executeTransaction(txIndex);
+        vm.stopPrank();
+
+        assertEq(mockToken.balanceOf(address(multiSigWallet)), 99 ether);
+        assertEq(mockToken.balanceOf(target), 1 ether);
     }
 
     // ============ Owner Management Tests ============
