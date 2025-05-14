@@ -17,9 +17,11 @@ contract MultiSigWalletTest is Test {
     address[] owners;
     uint8 requiredConfirmations = 2;
     uint256 expirationTime = 604800; // 1 weeks
+    address token = address(0x0); // 0x0 address refers to native token ETH
 
     // ============ Events ============
     event TransactionSubmitted(
+        address token,
         address indexed owner, 
         uint256 indexed txIndex, 
         address indexed to, 
@@ -48,7 +50,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
         multiSigWallet.confirmTransaction(txIndex);
@@ -106,7 +108,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
-        multiSigWallet.submitTransaction(address(0x111), 1, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x111), 1, "", expirationTime);
     }
 
     function test_submitTransactionByOwner() public {
@@ -118,11 +120,11 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmitted(owner, txIndex, target, value, data, expirationTime);
-        multiSigWallet.submitTransaction(target, value, data, expirationTime);
+        emit TransactionSubmitted(token, owner, txIndex, target, value, data, expirationTime);
+        multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
 
         // Validate state
-        (address to, uint256 txValue, bytes memory txData, bool executed, uint256 numConfirmations, uint256 expiration) =
+        (address tokenAddress, address to, uint256 txValue, bytes memory txData, bool executed, uint256 numConfirmations, uint256 expiration) =
             multiSigWallet.transactions(0);
 
         assertEq(to, target, "Target address mismatch");
@@ -131,6 +133,7 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, false, "Transaction should not be executed yet");
         assertEq(numConfirmations, 0, "Transaction should start with 0 confirmations");
         assertLt(block.timestamp, block.timestamp + expiration, "Transaction should not be expired");
+        assertEq(tokenAddress, address(0x0), "Token address mismatch");
     }
 
     // ============ Transaction Confirmation Tests ============
@@ -159,7 +162,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner2);
         multiSigWallet.confirmTransaction(txIndex);
@@ -173,7 +176,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
             vm.prank(owner1);
-            multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+            multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.warp(block.timestamp + 2 weeks);
         vm.prank(owner1);
@@ -187,7 +190,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owners[0]);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(nonOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
@@ -198,12 +201,12 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
         multiSigWallet.confirmTransaction(txIndex);
 
-        (,,,, uint256 numConfirmations,) = multiSigWallet.transactions(0);
+        (,,,,, uint256 numConfirmations,) = multiSigWallet.transactions(0);
         assertEq(numConfirmations, 1);
 
         bool isConfirmed = multiSigWallet.isConfirmed(owner1, txIndex);
@@ -247,7 +250,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
@@ -258,7 +261,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
         multiSigWallet.confirmTransaction(txIndex);
@@ -275,7 +278,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(target, 1 wei, "0x1234", expirationTime);
+        multiSigWallet.submitTransaction(token, target, 1 wei, "0x1234", expirationTime);
 
         vm.prank(owner1);
         multiSigWallet.confirmTransaction(txIndex);
@@ -307,7 +310,7 @@ contract MultiSigWalletTest is Test {
         vm.deal(address(multiSigWallet), 1 ether);
         multiSigWallet.executeTransaction(txIndex);
 
-        (,,, bool executed,,) = multiSigWallet.transactions(txIndex);
+        (,,,, bool executed,,) = multiSigWallet.transactions(txIndex);
 
         assertEq(executed, true);
     }
@@ -334,7 +337,7 @@ contract MultiSigWalletTest is Test {
         assertEq(multiSigWallet.getOwnerCount(), numOwnersBeforeTx + 1);
         assertEq(multiSigWallet.isOwner(newOwner), true);
 
-        (,,, bool executed,,) = multiSigWallet.transactions(txIndex);
+        (,,,, bool executed,,) = multiSigWallet.transactions(txIndex);
         assertEq(executed, true);
     }
 
@@ -359,7 +362,7 @@ contract MultiSigWalletTest is Test {
         assertEq(multiSigWallet.getOwnerCount(), numOwnersBeforeTx - 1);
         assertEq(multiSigWallet.isOwner(oldOwner), false);
 
-        (,,, bool executed,,) = multiSigWallet.transactions(txIndex);
+        (,,,, bool executed,,) = multiSigWallet.transactions(txIndex);
         assertEq(executed, true);
     }
 
@@ -370,10 +373,10 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmitted(owner1, txIndex, address(multiSigWallet), 0, _data, expirationTime);
+        emit TransactionSubmitted(token, owner1, txIndex, address(multiSigWallet), 0, _data, expirationTime);
         multiSigWallet.submitAddOwner(newOwner, expirationTime);
 
-        (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
+        (address tokenAddress, address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
             multiSigWallet.transactions(txIndex);
         assertEq(to, address(multiSigWallet));
         assertEq(value, 0);
@@ -381,6 +384,7 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, false);
         assertEq(numConfirmations, 0);
         assertLt(block.timestamp, block.timestamp + expiration, "Transaction should not be expired");
+        assertEq(tokenAddress, address(0x0), "Token address mismatch");
     }
 
     function testRevert_AddOwnerTxWithInvalidOwnerAddress() public {
@@ -467,10 +471,10 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmitted(owner1, txIndex, address(multiSigWallet), 0, _data, expirationTime);
+        emit TransactionSubmitted(token, owner1, txIndex, address(multiSigWallet), 0, _data, expirationTime);
         multiSigWallet.submitRemoveOwner(oldOwner, expirationTime);
 
-        (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
+        (address tokenAddress, address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
             multiSigWallet.transactions(txIndex);
         assertEq(to, address(multiSigWallet));
         assertEq(value, 0);
@@ -478,6 +482,7 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, false);
         assertEq(numConfirmations, 0);
         assertLt(block.timestamp, block.timestamp + expiration, "Transaction should not be expired");
+        assertEq(tokenAddress, address(0x0), "Token address mismatch");
     }
 
     // ============ Confirmation Revocation Tests ============
@@ -506,7 +511,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxNotSigned.selector));
@@ -546,7 +551,7 @@ contract MultiSigWalletTest is Test {
         bool isConfirmed = multiSigWallet.isConfirmed(owner1, txIndex);
         assertEq(isConfirmed, false);
 
-        (,,,, uint256 numConfirmations,) = multiSigWallet.transactions(0);
+        (,,,,, uint256 numConfirmations,) = multiSigWallet.transactions(0);
         assertEq(numConfirmations, 1);
     }
 
@@ -560,8 +565,8 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmitted(owner, txIndex, target, value, data, expirationTime);
-        multiSigWallet.submitTransaction(target, value, data, expirationTime);
+        emit TransactionSubmitted(token, owner, txIndex, target, value, data, expirationTime);
+        multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
     }
 
     function testEmit_ConfirmTransaction() public {
@@ -573,8 +578,8 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit TransactionSubmitted(owner, txIndex, target, value, data, expirationTime);
-        multiSigWallet.submitTransaction(target, value, data, expirationTime);
+        emit TransactionSubmitted(token, owner, txIndex, target, value, data, expirationTime);
+        multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
 
         vm.prank(owner);
         vm.expectEmit(true, true, false, false);
@@ -612,7 +617,7 @@ contract MultiSigWalletTest is Test {
 
         multiSigWallet.getTransaction(txIndex);
 
-        (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
+        (address tokenAddress, address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
             multiSigWallet.transactions(txIndex);
 
         assertEq(to, address(0x1234));
@@ -621,6 +626,7 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, false);
         assertEq(numConfirmations, 2);
         assertLt(block.timestamp, block.timestamp + expiration, "Transaction should not be expired");
+        assertEq(tokenAddress, address(0x0), "Token address mismatch");
     }
 
     function testRevert_getTxWithInvalidTxIndex() public {
