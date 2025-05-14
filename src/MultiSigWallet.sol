@@ -2,6 +2,7 @@
 pragma solidity ^0.8.22;
 
 import {BytesUtils} from "./BytesUtils.sol";
+import {IERC20} from "./IERC20.sol";
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
@@ -29,6 +30,7 @@ contract MultiSigWallet {
 
     // ============ Events ============
     event TransactionSubmitted(
+        address token, // update & test
         address indexed owner, 
         uint256 indexed txIndex, 
         address indexed to, 
@@ -46,6 +48,7 @@ contract MultiSigWallet {
 
     // ============ Structs ============
     struct Transaction {
+        address token; // test
         address to;
         uint256 value;
         bytes data;
@@ -93,22 +96,24 @@ contract MultiSigWallet {
     /// @param _value The amount of ETH to send
     /// @param _data The transaction data
     function submitTransaction(
+        address _token, // test
         address _to, 
         uint256 _value, 
         bytes memory _data,
         uint256 _expiration
     ) external onlyOwner {
         Transaction memory newTransaction = Transaction({
+            token: _token, // test
             to: _to,
             value: _value,
             data: _data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // test it
+            expiration: block.timestamp + _expiration
         });
         transactions.push(newTransaction);
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, _to, _value, _data, _expiration);
+        emit TransactionSubmitted(_token, msg.sender, transactions.length - 1, _to, _value, _data, _expiration);
     }
 
     /// @notice Confirm a transaction
@@ -117,7 +122,7 @@ contract MultiSigWallet {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if (isConfirmed[msg.sender][_txIndex]) revert MSW_TxAlreadySigned();
-        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired(); // need to test this
+        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired();
 
         transactions[_txIndex].numConfirmations += 1;
         isConfirmed[msg.sender][_txIndex] = true;
@@ -131,7 +136,7 @@ contract MultiSigWallet {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
         if (!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
-        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired(); // need to test this
+        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired();
 
         transactions[_txIndex].numConfirmations -= 1;
         isConfirmed[msg.sender][_txIndex] = false;
@@ -143,7 +148,7 @@ contract MultiSigWallet {
     /// @param _txIndex The index of the transaction to execute
     function executeTransaction(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
-        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired(); // need to test this
+        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired();
 
         Transaction storage transaction = transactions[_txIndex];
 
@@ -176,15 +181,16 @@ contract MultiSigWallet {
         bytes memory data = abi.encodeWithSelector(this.submitAddOwner.selector, _newOwner);
 
         transactions.push(Transaction({
+            token: address(0x0),
             to: address(this),
             value: 0,
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // need to test this
+            expiration: block.timestamp + _expiration
         }));
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
+        emit TransactionSubmitted(address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
     }
 
     /// @notice Submit a transaction to remove an owner
@@ -196,15 +202,16 @@ contract MultiSigWallet {
         bytes memory data = abi.encodeWithSelector(this.submitRemoveOwner.selector, _ownerToRemove);
 
         transactions.push(Transaction({
+            token: address(0x0),
             to: address(this),
             value: 0,
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // need to test this
+            expiration: block.timestamp + _expiration
         }));
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
+        emit TransactionSubmitted(address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
     }
 
     /// @notice Submit a transaction to change the required number of confirmations
@@ -220,15 +227,16 @@ contract MultiSigWallet {
         );
 
         transactions.push(Transaction({
+            token: address(0x0),
             to: address(this),
             value: 0,
             data: data,
             executed: false,
             numConfirmations: 0,
-            expiration: block.timestamp + _expiration // need to test this
+            expiration: block.timestamp + _expiration
         }));
 
-        emit TransactionSubmitted(msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
+        emit TransactionSubmitted(address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
     }
 
     // ============ Internal Functions ============
@@ -275,13 +283,22 @@ contract MultiSigWallet {
         uint256 _txIndex, 
         Transaction storage transaction
     ) internal {
-        if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
         
         transaction.executed = true;
-
-        (bool success,) = transaction.to.call{value: transaction.value}(txData);
-        if (!success) revert MSW_TransactionFailed();
-
+        
+        if (transaction.token != address(0x0)) {
+            if (transaction.value > IERC20(transaction.token).balanceOf(address(this))) revert MSW_InsufficientBalance();
+            (bool success, bytes memory data) = transaction.to.call(abi.encodeWithSelector(
+                IERC20.transfer.selector,
+                transaction.to,
+                transaction.value
+            ));
+            if (!success || (data.length != 0 && abi.decode(data, (bool)))) revert MSW_TransactionFailed();
+        } else {
+            if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
+            (bool success,) = transaction.to.call{value: transaction.value}(txData);
+            if (!success) revert MSW_TransactionFailed();
+        }
         emit TransactionExecuted(msg.sender, _txIndex);
     }
 
@@ -305,4 +322,16 @@ contract MultiSigWallet {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         return transactions[_txIndex];
     }
+
+    function recive() external payable {
+        emit Deposited(msg.sender, msg.value);
+    } 
+
+    /// Need to test:
+    ///    - structuurs of tx
+    ///    - function inputs
+    ///    - emited events
+    ///    - update the logic:
+    ///         - check the token address in execute and do the transfer based on the token address
+
 }
