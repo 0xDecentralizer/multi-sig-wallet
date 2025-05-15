@@ -24,10 +24,10 @@ contract MultiSigWalletTest is Test {
     // ============ Events ============
     event TransactionSubmitted(
         address token,
-        address indexed owner, 
-        uint256 indexed txIndex, 
-        address indexed to, 
-        uint256 value, 
+        address indexed owner,
+        uint256 indexed txIndex,
+        address indexed to,
+        uint256 value,
         bytes data,
         uint256 expiration
     );
@@ -127,8 +127,15 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
 
         // Validate state
-        (address tokenAddress, address to, uint256 txValue, bytes memory txData, bool executed, uint256 numConfirmations, uint256 expiration) =
-            multiSigWallet.transactions(0);
+        (
+            address tokenAddress,
+            address to,
+            uint256 txValue,
+            bytes memory txData,
+            bool executed,
+            uint256 numConfirmations,
+            uint256 expiration
+        ) = multiSigWallet.transactions(0);
 
         assertEq(to, target, "Target address mismatch");
         assertEq(txValue, value, "Transaction value mismatch");
@@ -178,8 +185,8 @@ contract MultiSigWalletTest is Test {
     function testRevert_ExpiredTxCannotBeSigned() public {
         uint256 txIndex = 0;
 
-            vm.prank(owner1);
-            multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
+        vm.prank(owner1);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.warp(block.timestamp + 2 weeks);
         vm.prank(owner1);
@@ -300,33 +307,32 @@ contract MultiSigWalletTest is Test {
         assertEq(address(multiSigWallet).balance, 1 ether, "Wallet balance should not change");
     }
 
-    
     function testRevert_ExecuteTxWithFailedTransfer() public {
         ERC20Mock mockToken = new ERC20Mock();
         mockToken.mint(address(multiSigWallet), 1000 ether);
-        
+
         vm.prank(owner1);
         multiSigWallet.submitTransaction(address(mockToken), address(0x1234), 100 ether, "", expirationTime);
-        
+
         vm.prank(owner1);
         multiSigWallet.confirmTransaction(0);
         vm.prank(owner2);
         multiSigWallet.confirmTransaction(0);
-        
+
         // Mock the token to return false on transfer
         vm.mockCall(
             address(mockToken),
             abi.encodeWithSelector(IERC20.transfer.selector, address(0x1234), 100 ether),
             abi.encode(false)
         );
-        
+
         vm.prank(owner1);
         vm.expectRevert(MultiSigWallet.MSW_TransactionFailed.selector);
         multiSigWallet.executeTransaction(0);
-        
+
         (,,,, bool executed,,) = multiSigWallet.transactions(0);
         assertEq(executed, false, "Transaction should not be executed");
-        
+
         // Verify token balance didn't change
         assertEq(mockToken.balanceOf(address(multiSigWallet)), 1000 ether, "Token balance should not change");
         assertEq(mockToken.balanceOf(address(0x1234)), 0, "Recipient should not receive tokens");
@@ -365,7 +371,7 @@ contract MultiSigWalletTest is Test {
         // Deploy mock ERC20 token
         ERC20Mock mockToken = new ERC20Mock();
         ERC20Token = address(mockToken);
-        
+
         // Fund the multisig with tokens
         mockToken.mint(address(multiSigWallet), 1 ether);
 
@@ -373,7 +379,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(ERC20Token, target, value, data, expirationTime);
         multiSigWallet.confirmTransaction(txIndex);
         vm.stopPrank();
-        
+
         vm.startPrank(owner2);
         multiSigWallet.confirmTransaction(txIndex);
 
@@ -392,7 +398,7 @@ contract MultiSigWalletTest is Test {
         // Deploy mock ERC20 token
         ERC20Mock mockToken = new ERC20Mock();
         ERC20Token = address(mockToken);
-        
+
         // Fund the multisig with tokens
         mockToken.mint(address(multiSigWallet), 100 ether);
 
@@ -400,7 +406,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(ERC20Token, target, value, data, expirationTime);
         multiSigWallet.confirmTransaction(txIndex);
         vm.stopPrank();
-        
+
         vm.startPrank(owner2);
         multiSigWallet.confirmTransaction(txIndex);
         multiSigWallet.executeTransaction(txIndex);
@@ -471,8 +477,15 @@ contract MultiSigWalletTest is Test {
         emit TransactionSubmitted(token, owner1, txIndex, address(multiSigWallet), 0, _data, expirationTime);
         multiSigWallet.submitAddOwner(newOwner, expirationTime);
 
-        (address tokenAddress, address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
-            multiSigWallet.transactions(txIndex);
+        (
+            address tokenAddress,
+            address to,
+            uint256 value,
+            bytes memory data,
+            bool executed,
+            uint256 numConfirmations,
+            uint256 expiration
+        ) = multiSigWallet.transactions(txIndex);
         assertEq(to, address(multiSigWallet));
         assertEq(value, 0);
         assertEq(data, _data);
@@ -569,8 +582,15 @@ contract MultiSigWalletTest is Test {
         emit TransactionSubmitted(token, owner1, txIndex, address(multiSigWallet), 0, _data, expirationTime);
         multiSigWallet.submitRemoveOwner(oldOwner, expirationTime);
 
-        (address tokenAddress, address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
-            multiSigWallet.transactions(txIndex);
+        (
+            address tokenAddress,
+            address to,
+            uint256 value,
+            bytes memory data,
+            bool executed,
+            uint256 numConfirmations,
+            uint256 expiration
+        ) = multiSigWallet.transactions(txIndex);
         assertEq(to, address(multiSigWallet));
         assertEq(value, 0);
         assertEq(data, _data);
@@ -617,7 +637,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         setupTxWithTwoSignatures();
-        
+
         vm.prank(owner1);
         vm.warp(block.timestamp + 2 weeks);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionExpired.selector));
@@ -712,8 +732,15 @@ contract MultiSigWalletTest is Test {
 
         multiSigWallet.getTransaction(txIndex);
 
-        (address tokenAddress, address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations, uint256 expiration) =
-            multiSigWallet.transactions(txIndex);
+        (
+            address tokenAddress,
+            address to,
+            uint256 value,
+            bytes memory data,
+            bool executed,
+            uint256 numConfirmations,
+            uint256 expiration
+        ) = multiSigWallet.transactions(txIndex);
 
         assertEq(to, address(0x1234));
         assertEq(value, 1 wei);
@@ -808,14 +835,14 @@ contract MultiSigWalletTest is Test {
         uint256 initialBalance = address(multiSigWallet).balance;
 
         vm.deal(address(this), 10 ether);
-    
+
         vm.expectEmit(true, false, false, true);
         emit Deposited(address(this), 1 ether);
-    
-        (bool success, ) = address(multiSigWallet).call{value: 1 ether}("");
+
+        (bool success,) = address(multiSigWallet).call{value: 1 ether}("");
         assertTrue(success, "Failed to send Ether to MultiSigWallet");
-    
+
         uint256 newBalance = address(multiSigWallet).balance;
         assertEq(newBalance, initialBalance + 1 ether, "Deposit to MultiSigWallet failed");
-    }   
+    }
 }

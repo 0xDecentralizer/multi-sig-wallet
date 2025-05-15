@@ -29,12 +29,12 @@ contract MultiSigWallet {
     error MSW_TransactionExpired();
 
     // ============ Events ============
-    event TransactionSubmitted(
-        address token, // update & test
-        address indexed owner, 
-        uint256 indexed txIndex, 
-        address indexed to, 
-        uint256 value, 
+    event TransactionSubmitted( // update & test
+        address token,
+        address indexed owner,
+        uint256 indexed txIndex,
+        address indexed to,
+        uint256 value,
         bytes data,
         uint256 expiration
     );
@@ -97,8 +97,8 @@ contract MultiSigWallet {
     /// @param _data The transaction data
     function submitTransaction(
         address _token, // test
-        address _to, 
-        uint256 _value, 
+        address _to,
+        uint256 _value,
         bytes memory _data,
         uint256 _expiration
     ) external onlyOwner {
@@ -162,14 +162,15 @@ contract MultiSigWallet {
             selector := mload(add(txData, 32))
         }
 
-        if (selector == this.submitAddOwner.selector)
+        if (selector == this.submitAddOwner.selector) {
             _executeAddOwner(txData, transaction);
-        else if (selector == this.submitRemoveOwner.selector)
-            _executeRemoveOwner(txData, transaction);    
-        else if (selector == this.changeRequiredConfirmations.selector)
+        } else if (selector == this.submitRemoveOwner.selector) {
+            _executeRemoveOwner(txData, transaction);
+        } else if (selector == this.changeRequiredConfirmations.selector) {
             _executeChangeRequiredConfirmations(txData);
-        else
+        } else {
             _executeTransaction(txData, _txIndex, transaction);
+        }
     }
 
     /// @notice Submit a transaction to add a new owner
@@ -180,17 +181,21 @@ contract MultiSigWallet {
 
         bytes memory data = abi.encodeWithSelector(this.submitAddOwner.selector, _newOwner);
 
-        transactions.push(Transaction({
-            token: address(0x0),
-            to: address(this),
-            value: 0,
-            data: data,
-            executed: false,
-            numConfirmations: 0,
-            expiration: block.timestamp + _expiration
-        }));
+        transactions.push(
+            Transaction({
+                token: address(0x0),
+                to: address(this),
+                value: 0,
+                data: data,
+                executed: false,
+                numConfirmations: 0,
+                expiration: block.timestamp + _expiration
+            })
+        );
 
-        emit TransactionSubmitted(address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
+        emit TransactionSubmitted(
+            address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration
+        );
     }
 
     /// @notice Submit a transaction to remove an owner
@@ -201,17 +206,21 @@ contract MultiSigWallet {
 
         bytes memory data = abi.encodeWithSelector(this.submitRemoveOwner.selector, _ownerToRemove);
 
-        transactions.push(Transaction({
-            token: address(0x0),
-            to: address(this),
-            value: 0,
-            data: data,
-            executed: false,
-            numConfirmations: 0,
-            expiration: block.timestamp + _expiration
-        }));
+        transactions.push(
+            Transaction({
+                token: address(0x0),
+                to: address(this),
+                value: 0,
+                data: data,
+                executed: false,
+                numConfirmations: 0,
+                expiration: block.timestamp + _expiration
+            })
+        );
 
-        emit TransactionSubmitted(address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
+        emit TransactionSubmitted(
+            address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration
+        );
     }
 
     /// @notice Submit a transaction to change the required number of confirmations
@@ -221,22 +230,23 @@ contract MultiSigWallet {
         if (_newRequiredConfirmations < 1) revert MSW_InvalidRequireConfirmations();
         if (_newRequiredConfirmations == requiredConfirmations) revert MSW_InvalidRequireConfirmations();
 
-        bytes memory data = abi.encodeWithSelector(
-            this.changeRequiredConfirmations.selector, 
-            _newRequiredConfirmations
+        bytes memory data = abi.encodeWithSelector(this.changeRequiredConfirmations.selector, _newRequiredConfirmations);
+
+        transactions.push(
+            Transaction({
+                token: address(0x0),
+                to: address(this),
+                value: 0,
+                data: data,
+                executed: false,
+                numConfirmations: 0,
+                expiration: block.timestamp + _expiration
+            })
         );
 
-        transactions.push(Transaction({
-            token: address(0x0),
-            to: address(this),
-            value: 0,
-            data: data,
-            executed: false,
-            numConfirmations: 0,
-            expiration: block.timestamp + _expiration
-        }));
-
-        emit TransactionSubmitted(address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration);
+        emit TransactionSubmitted(
+            address(0x0), msg.sender, transactions.length - 1, address(this), 0, data, _expiration
+        );
     }
 
     // ============ Internal Functions ============
@@ -267,32 +277,25 @@ contract MultiSigWallet {
         emit OwnerRemoved(oldOwner);
     }
 
-    function _executeChangeRequiredConfirmations(
-        bytes memory txData
-    ) internal {
+    function _executeChangeRequiredConfirmations(bytes memory txData) internal {
         uint8 oldReqConf = requiredConfirmations;
         uint8 newReqConf = abi.decode(txData.sliceBytes(4), (uint8));
 
         requiredConfirmations = newReqConf;
-        
+
         emit RequireConfirmationsChanged(oldReqConf, newReqConf);
     }
 
-    function _executeTransaction(
-        bytes memory txData, 
-        uint256 _txIndex, 
-        Transaction storage transaction
-    ) internal {
-        
+    function _executeTransaction(bytes memory txData, uint256 _txIndex, Transaction storage transaction) internal {
         transaction.executed = true;
-        
+
         if (transaction.token != address(0x0)) {
-            if (transaction.value > IERC20(transaction.token).balanceOf(address(this))) revert MSW_InsufficientBalance();
-            (bool success, bytes memory data) = transaction.token.call(abi.encodeWithSelector(
-                IERC20.transfer.selector,
-                transaction.to,
-                transaction.value
-            ));
+            if (transaction.value > IERC20(transaction.token).balanceOf(address(this))) {
+                revert MSW_InsufficientBalance();
+            }
+            (bool success, bytes memory data) = transaction.token.call(
+                abi.encodeWithSelector(IERC20.transfer.selector, transaction.to, transaction.value)
+            );
             if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert MSW_TransactionFailed();
 
             // bool success = IERC20(transaction.token).transfer(transaction.to, transaction.value);
@@ -330,12 +333,4 @@ contract MultiSigWallet {
     receive() external payable {
         emit Deposited(msg.sender, msg.value);
     }
-
-    /// Need to test:
-    ///    - structuurs of tx
-    ///    - function inputs
-    ///    - emited events
-    ///    - update the logic:
-    ///         - check the token address in execute and do the transfer based on the token address
-
 }
