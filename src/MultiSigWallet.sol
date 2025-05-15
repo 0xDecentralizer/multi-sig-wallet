@@ -2,7 +2,7 @@
 pragma solidity ^0.8.22;
 
 import {BytesUtils} from "./BytesUtils.sol";
-import {IERC20} from "./IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions

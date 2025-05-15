@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {MultiSigWallet} from "../src/MultiSigWallet.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {MockERC20} from "../src/MockERC20.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 /// @title MultiSigWalletTest
 /// @notice Test suite for the MultiSigWallet contract
@@ -316,6 +316,33 @@ contract MultiSigWalletTest is Test {
         assertEq(executed, true);
     }
 
+    function testRevert_ExecuteERC20TxWithInsufficientFund() public {
+        address ERC20Token;
+        uint256 txIndex = 0;
+        address target = address(0x1234);
+        uint256 value = 2 ether;
+        bytes memory data = "";
+
+        // Deploy mock ERC20 token
+        ERC20Mock mockToken = new ERC20Mock();
+        ERC20Token = address(mockToken);
+        
+        // Fund the multisig with tokens
+        mockToken.mint(address(multiSigWallet), 1 ether);
+
+        vm.startPrank(owner1);
+        multiSigWallet.submitTransaction(ERC20Token, target, value, data, expirationTime);
+        multiSigWallet.confirmTransaction(txIndex);
+        vm.stopPrank();
+        
+        vm.startPrank(owner2);
+        multiSigWallet.confirmTransaction(txIndex);
+
+        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InsufficientBalance.selector));
+        multiSigWallet.executeTransaction(txIndex);
+        vm.stopPrank();
+    }
+
     function test_ExecuteERC20TxWithSufficientFund() public {
         address ERC20Token;
         uint256 txIndex = 0;
@@ -324,7 +351,7 @@ contract MultiSigWalletTest is Test {
         bytes memory data = "";
 
         // Deploy mock ERC20 token
-        MockERC20 mockToken = new MockERC20();
+        ERC20Mock mockToken = new ERC20Mock();
         ERC20Token = address(mockToken);
         
         // Fund the multisig with tokens
