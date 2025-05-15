@@ -299,6 +299,38 @@ contract MultiSigWalletTest is Test {
         assertEq(address(multiSigWallet).balance, 1 ether, "Wallet balance should not change");
     }
 
+    
+    function testRevert_ExecuteTxWithFailedTransfer() public {
+        ERC20Mock mockToken = new ERC20Mock();
+        mockToken.mint(address(multiSigWallet), 1000 ether);
+        
+        vm.prank(owner1);
+        multiSigWallet.submitTransaction(address(mockToken), address(0x1234), 100 ether, "", expirationTime);
+        
+        vm.prank(owner1);
+        multiSigWallet.confirmTransaction(0);
+        vm.prank(owner2);
+        multiSigWallet.confirmTransaction(0);
+        
+        // Mock the token to return false on transfer
+        vm.mockCall(
+            address(mockToken),
+            abi.encodeWithSelector(IERC20.transfer.selector, address(0x1234), 100 ether),
+            abi.encode(false)
+        );
+        
+        vm.prank(owner1);
+        vm.expectRevert(MultiSigWallet.MSW_TransactionFailed.selector);
+        multiSigWallet.executeTransaction(0);
+        
+        (,,,, bool executed,,) = multiSigWallet.transactions(0);
+        assertEq(executed, false, "Transaction should not be executed");
+        
+        // Verify token balance didn't change
+        assertEq(mockToken.balanceOf(address(multiSigWallet)), 1000 ether, "Token balance should not change");
+        assertEq(mockToken.balanceOf(address(0x1234)), 0, "Recipient should not receive tokens");
+    }
+
     function test_NonOwnerCannotCallExecuteTransaction() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
