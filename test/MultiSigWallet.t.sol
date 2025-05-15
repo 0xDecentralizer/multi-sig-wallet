@@ -6,6 +6,7 @@ import {MultiSigWallet} from "../src/MultiSigWallet.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 /// @title MultiSigWalletTest
 /// @notice Test suite for the MultiSigWallet contract
@@ -277,9 +278,10 @@ contract MultiSigWalletTest is Test {
     function testRevert_ExecuteTxWithFailedCall() public {
         address target = address(multiSigWallet);
         uint256 txIndex = 0;
+        bytes memory data = "0x1234"; // There is no function with this signature in the MultiSigWallet contract
 
         vm.prank(owner1);
-        multiSigWallet.submitTransaction(token, target, 1 wei, "0x1234", expirationTime);
+        multiSigWallet.submitTransaction(token, target, 1 wei, data, expirationTime);
 
         vm.prank(owner1);
         multiSigWallet.confirmTransaction(txIndex);
@@ -291,6 +293,10 @@ contract MultiSigWalletTest is Test {
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionFailed.selector));
         multiSigWallet.executeTransaction(txIndex);
+
+        (,,,, bool executed,,) = multiSigWallet.transactions(0);
+        assertEq(executed, false, "Transaction should not be executed");
+        assertEq(address(multiSigWallet).balance, 1 ether, "Wallet balance should not change");
     }
 
     function test_NonOwnerCannotCallExecuteTransaction() public {
