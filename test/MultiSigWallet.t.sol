@@ -37,6 +37,7 @@ contract MultiSigWalletTest is Test {
     event OwnerAdded(address indexed newOwner);
     event OwnerRemoved(address indexed oldOwner);
     event RequireConfirmationsChanged(uint8 indexed oldReqConf, uint8 indexed newReqConf);
+    event Deposited(address indexed sender, uint256 value);
 
     // ============ Setup ============
     function setUp() public {
@@ -802,4 +803,19 @@ contract MultiSigWalletTest is Test {
         // Verify the change
         assertEq(multiSigWallet.requiredConfirmations(), newRequiredConfirmations);
     }
+
+    function testEmit_DepositToMultiSigWallet() public {
+        uint256 initialBalance = address(multiSigWallet).balance;
+
+        vm.deal(address(this), 10 ether);
+    
+        vm.expectEmit(true, false, false, true);
+        emit Deposited(address(this), 1 ether);
+    
+        (bool success, ) = address(multiSigWallet).call{value: 1 ether}("");
+        assertTrue(success, "Failed to send Ether to MultiSigWallet");
+    
+        uint256 newBalance = address(multiSigWallet).balance;
+        assertEq(newBalance, initialBalance + 1 ether, "Deposit to MultiSigWallet failed");
+    }   
 }
