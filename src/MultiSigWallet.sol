@@ -327,7 +327,7 @@ contract MultiSigWallet {
         return transactions[_txIndex];
     }
 
-    function recive() external payable {
+    receive() external payable {
         emit Deposited(msg.sender, msg.value);
     }
 
