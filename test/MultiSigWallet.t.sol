@@ -7,6 +7,8 @@ import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {MSW_NotOwner, MSW_OldOwnerInvalid, MSW_TxDoesNotExist, MSW_TxAlreadyExecuted, MSW_TxAlreadySigned, MSW_TxNotSigned, MSW_NotEnoughConfirmations, MSW_InsufficientBalance, MSW_TransactionFailed, MSW_DuplicateOwner, MSW_InvalidOwnerAddress, MSW_EmptyOwnersList, MSW_ConfirmationsExceedOwnersCount, MSW_InvalidRequireConfirmations, MSW_InvalidFunctionSelector, MSW_TransactionExpired} from "../src/MultiSigWalletErrors.sol";
+import {TransactionSubmitted, TransactionConfirmed, ConfirmationRevoked, TransactionExecuted, Deposited, OwnerAdded, OwnerRemoved, RequireConfirmationsChanged} from "../src/MultiSigWalletEvents.sol";
 
 /// @title MultiSigWalletTest
 /// @notice Test suite for the MultiSigWallet contract
@@ -20,24 +22,6 @@ contract MultiSigWalletTest is Test {
     uint8 requiredConfirmations = 2;
     uint256 expirationTime = 604800; // 1 weeks
     address token = address(0x0); // 0x0 address refers to native token ETH
-
-    // ============ Events ============
-    event TransactionSubmitted(
-        address token,
-        address indexed owner,
-        uint256 indexed txIndex,
-        address indexed to,
-        uint256 value,
-        bytes data,
-        uint256 expiration
-    );
-    event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
-    event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
-    event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
-    event OwnerAdded(address indexed newOwner);
-    event OwnerRemoved(address indexed oldOwner);
-    event RequireConfirmationsChanged(uint8 indexed oldReqConf, uint8 indexed newReqConf);
-    event Deposited(address indexed sender, uint256 value);
 
     // ============ Setup ============
     function setUp() public {
@@ -81,26 +65,26 @@ contract MultiSigWalletTest is Test {
 
     function test_emptyOwners() public {
         owners = new address[](0);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_EmptyOwnersList.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_EmptyOwnersList.selector));
         multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
     function test_requiredConfirmations() public {
         owners.pop();
         owners.pop();
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_DuplicateOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector));
         multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
     function testRevert_ownerCannotBeZeroAddress() public {
         owners.push(address(0));
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidOwnerAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidOwnerAddress.selector));
         multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
     }
 
@@ -110,7 +94,7 @@ contract MultiSigWalletTest is Test {
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.submitTransaction(token, address(0x111), 1, "", expirationTime);
     }
 
@@ -151,7 +135,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 1;
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxDoesNotExist.selector));
         multiSigWallet.confirmTransaction(txIndex);
     }
 
@@ -164,7 +148,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadyExecuted.selector));
         multiSigWallet.confirmTransaction(txIndex);
     }
 
@@ -178,7 +162,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.confirmTransaction(txIndex);
 
         vm.prank(owner2);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadySigned.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadySigned.selector));
         multiSigWallet.confirmTransaction(txIndex);
     }
 
@@ -190,7 +174,7 @@ contract MultiSigWalletTest is Test {
 
         vm.warp(block.timestamp + 2 weeks);
         vm.prank(owner1);
-        vm.expectRevert(MultiSigWallet.MSW_TransactionExpired.selector);
+        vm.expectRevert(MSW_TransactionExpired.selector);
         multiSigWallet.confirmTransaction(txIndex);
     }
 
@@ -203,7 +187,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.confirmTransaction(txIndex);
     }
 
@@ -233,7 +217,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadyExecuted.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -241,7 +225,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxDoesNotExist.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -252,7 +236,7 @@ contract MultiSigWalletTest is Test {
 
         vm.warp(block.timestamp + 2 weeks);
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionExpired.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TransactionExpired.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -263,7 +247,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -279,7 +263,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.confirmTransaction(txIndex);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InsufficientBalance.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_InsufficientBalance.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -299,7 +283,7 @@ contract MultiSigWalletTest is Test {
         vm.deal(address(multiSigWallet), 1 ether);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionFailed.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TransactionFailed.selector));
         multiSigWallet.executeTransaction(txIndex);
 
         (,,,, bool executed,,) = multiSigWallet.transactions(0);
@@ -327,7 +311,7 @@ contract MultiSigWalletTest is Test {
         );
 
         vm.prank(owner1);
-        vm.expectRevert(MultiSigWallet.MSW_TransactionFailed.selector);
+        vm.expectRevert(MSW_TransactionFailed.selector);
         multiSigWallet.executeTransaction(0);
 
         (,,,, bool executed,,) = multiSigWallet.transactions(0);
@@ -343,7 +327,7 @@ contract MultiSigWalletTest is Test {
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.executeTransaction(0);
     }
 
@@ -383,7 +367,7 @@ contract MultiSigWalletTest is Test {
         vm.startPrank(owner2);
         multiSigWallet.confirmTransaction(txIndex);
 
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InsufficientBalance.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_InsufficientBalance.selector));
         multiSigWallet.executeTransaction(txIndex);
         vm.stopPrank();
     }
@@ -499,7 +483,7 @@ contract MultiSigWalletTest is Test {
         address newOwner = address(0x0);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidOwnerAddress.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidOwnerAddress.selector));
         multiSigWallet.submitAddOwner(newOwner, expirationTime);
     }
 
@@ -507,7 +491,7 @@ contract MultiSigWalletTest is Test {
         address newOwner = owners[1];
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_DuplicateOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector));
         multiSigWallet.submitAddOwner(newOwner, expirationTime);
     }
 
@@ -516,7 +500,7 @@ contract MultiSigWalletTest is Test {
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.submitAddOwner(address(0x4), expirationTime);
     }
 
@@ -528,7 +512,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitAddOwner(newOwner, expirationTime);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -540,7 +524,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitRemoveOwner(oldOwner, expirationTime);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotEnoughConfirmations.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotEnoughConfirmations.selector));
         multiSigWallet.executeTransaction(txIndex);
     }
 
@@ -548,7 +532,7 @@ contract MultiSigWalletTest is Test {
         address oldOwner = address(0xDe);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_OldOwnerInvalid.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_OldOwnerInvalid.selector));
         multiSigWallet.submitRemoveOwner(oldOwner, expirationTime);
     }
 
@@ -559,7 +543,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet = new MultiSigWallet(owners, requiredConfirmations);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet.submitRemoveOwner(oldOwner, expirationTime);
     }
 
@@ -568,7 +552,7 @@ contract MultiSigWalletTest is Test {
         vm.label(nonOwner, "NonOwner");
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.submitRemoveOwner(owners[1], expirationTime);
     }
 
@@ -605,7 +589,7 @@ contract MultiSigWalletTest is Test {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxDoesNotExist.selector));
         multiSigWallet.revokeConfirmation(txIndex);
     }
 
@@ -618,7 +602,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.executeTransaction(txIndex);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxAlreadyExecuted.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadyExecuted.selector));
         multiSigWallet.revokeConfirmation(txIndex);
     }
 
@@ -629,7 +613,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxNotSigned.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxNotSigned.selector));
         multiSigWallet.revokeConfirmation(txIndex);
     }
 
@@ -640,7 +624,7 @@ contract MultiSigWalletTest is Test {
 
         vm.prank(owner1);
         vm.warp(block.timestamp + 2 weeks);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TransactionExpired.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TransactionExpired.selector));
         multiSigWallet.revokeConfirmation(txIndex);
     }
 
@@ -651,7 +635,7 @@ contract MultiSigWalletTest is Test {
         setupTxWithTwoSignatures();
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.revokeConfirmation(txIndex);
     }
 
@@ -757,7 +741,7 @@ contract MultiSigWalletTest is Test {
         setupTxWithTwoSignatures();
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_TxDoesNotExist.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxDoesNotExist.selector));
         multiSigWallet.getTransaction(txIndex);
     }
 
@@ -766,7 +750,7 @@ contract MultiSigWalletTest is Test {
         uint8 newRequiredConfirmations = 2;
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidRequireConfirmations.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidRequireConfirmations.selector));
         multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations, expirationTime);
     }
 
@@ -774,7 +758,7 @@ contract MultiSigWalletTest is Test {
         uint8 newRequiredConfirmations = 0;
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_InvalidRequireConfirmations.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidRequireConfirmations.selector));
         multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations, expirationTime);
     }
 
@@ -782,7 +766,7 @@ contract MultiSigWalletTest is Test {
         uint8 newRequiredConfirmations = 4; // 4 confirmations are more than the number of owners (3)
 
         vm.prank(owner1);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_ConfirmationsExceedOwnersCount.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet.changeRequiredConfirmations(newRequiredConfirmations, expirationTime);
     }
 
@@ -790,7 +774,7 @@ contract MultiSigWalletTest is Test {
         address nonOwner = address(0xDe);
 
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(MultiSigWallet.MSW_NotOwner.selector));
+        vm.expectRevert(abi.encodeWithSelector(MSW_NotOwner.selector));
         multiSigWallet.changeRequiredConfirmations(1, expirationTime);
     }
 
