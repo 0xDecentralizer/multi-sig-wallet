@@ -3,8 +3,8 @@ pragma solidity ^0.8.22;
 
 import {BytesUtils} from "./BytesUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {MSW_NotOwner, MSW_OldOwnerInvalid, MSW_TxDoesNotExist, MSW_TxAlreadyExecuted, MSW_TxAlreadySigned, MSW_TxNotSigned, MSW_NotEnoughConfirmations, MSW_InsufficientBalance, MSW_TransactionFailed, MSW_DuplicateOwner, MSW_InvalidOwnerAddress, MSW_EmptyOwnersList, MSW_ConfirmationsExceedOwnersCount, MSW_InvalidRequireConfirmations, MSW_InvalidFunctionSelector, MSW_TransactionExpired} from "./MultiSigWalletErrors.sol";
-import {TransactionSubmitted, TransactionConfirmed, ConfirmationRevoked, TransactionExecuted, Deposited, OwnerAdded, OwnerRemoved, RequireConfirmationsChanged} from "./MultiSigWalletEvents.sol";
+import "./MultiSigWalletErrors.sol";
+import "./MultiSigWalletEvents.sol";
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
