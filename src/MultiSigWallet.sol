@@ -5,11 +5,13 @@ import {BytesUtils} from "./BytesUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./MultiSigWalletErrors.sol";
 import "./MultiSigWalletEvents.sol";
+import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
 /// @dev Implements a multi-signature wallet with configurable number of required confirmations
-contract MultiSigWallet {
+contract MultiSigWallet is Initializable {
     using BytesUtils for bytes;
 
     // ============ Structs ============
@@ -37,7 +39,7 @@ contract MultiSigWallet {
     }
 
     // ============ Constructor ============
-    constructor(address[] memory _owners, uint8 _requiredConfirmations) {
+    function initialize(address[] memory _owners, uint8 _requiredConfirmations) public initializer {
         if (_owners.length == 0) revert MSW_EmptyOwnersList();
         if (_owners.length < _requiredConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
 
