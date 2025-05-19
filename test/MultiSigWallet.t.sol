@@ -67,30 +67,30 @@ contract MultiSigWalletTest is Test {
 
     function test_emptyOwners() public {
         owners = new address[](0);
-        vm.expectRevert(abi.encodeWithSelector(MSW_EmptyOwnersList.selector));
         multiSigWallet = new MultiSigWallet();
+        vm.expectRevert(abi.encodeWithSelector(MSW_EmptyOwnersList.selector)); // Need to R&D
         multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
     }
 
     function test_requiredConfirmations() public {
         owners.pop();
         owners.pop();
-        vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet = new MultiSigWallet();
+        vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
     }
 
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
-        vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector));
         multiSigWallet = new MultiSigWallet();
+        vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector)); // Need to R&D
         multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
     }
 
     function testRevert_ownerCannotBeZeroAddress() public {
         owners.push(address(0));
-        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidOwnerAddress.selector));
         multiSigWallet = new MultiSigWallet();
+        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidOwnerAddress.selector)); // Need to R&D
         multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
     }
 
