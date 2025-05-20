@@ -57,6 +57,10 @@ contract MultiSigWallet is Initializable {
         requiredConfirmations = _requiredConfirmations;
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     // ============ External Functions ============
     /// @notice Submit a new transaction to be executed
     /// @param _to The address to send the transaction to
