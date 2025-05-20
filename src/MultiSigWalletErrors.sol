@@ -18,3 +18,4 @@ error MSW_ConfirmationsExceedOwnersCount();
 error MSW_InvalidRequireConfirmations();
 error MSW_InvalidFunctionSelector();
 error MSW_TransactionExpired();
+error MSW_TransactionDataTooLarge();

@@ -6,12 +6,16 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./MultiSigWalletErrors.sol";
 import "./MultiSigWalletEvents.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {ReentrancyGuardUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
 /// @dev Implements a multi-signature wallet with configurable number of required confirmations
-contract MultiSigWallet is Initializable {
+contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     using BytesUtils for bytes;
+
+    // ============ Constants ============
+    uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
 
     // ============ Structs ============
     struct Transaction {
@@ -39,6 +43,7 @@ contract MultiSigWallet is Initializable {
 
     // ============ Constructor ============
     function initialize(address[] memory _owners, uint8 _requiredConfirmations) public initializer {
+        __ReentrancyGuard_init();
         if (_owners.length == 0) revert MSW_EmptyOwnersList();
         if (_owners.length < _requiredConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
 
@@ -73,6 +78,7 @@ contract MultiSigWallet is Initializable {
         bytes memory _data,
         uint256 _expiration
     ) external onlyOwner {
+        if (_data.length > MAX_TRANSACTION_DATA_SIZE) revert MSW_TransactionDataTooLarge();
         Transaction memory newTransaction = Transaction({
             token: _token, // test
             to: _to,
@@ -117,7 +123,7 @@ contract MultiSigWallet is Initializable {
 
     /// @notice Execute a confirmed transaction
     /// @param _txIndex The index of the transaction to execute
-    function executeTransaction(uint256 _txIndex) external onlyOwner {
+    function executeTransaction(uint256 _txIndex) external onlyOwner nonReentrant {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired();
 
