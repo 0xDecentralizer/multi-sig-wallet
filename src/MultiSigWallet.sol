@@ -6,7 +6,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./MultiSigWalletErrors.sol";
 import "./MultiSigWalletEvents.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
@@ -301,4 +300,6 @@ contract MultiSigWallet is Initializable {
     receive() external payable {
         emit Deposited(msg.sender, msg.value);
     }
+
+    uint256[100] private __gap; // gap for future upgrades
 }
