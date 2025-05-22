@@ -24,25 +24,14 @@ contract MultiSigWalletTest is Test {
     uint256 expirationTime = 604800; // 1 weeks
     address token = address(0x0); // 0x0 address refers to native token ETH
 
-    // ============ Setup ============
+   // ============ Setup ============
     function setUp() public {
         owners = new address[](3);
         owners[0] = owner1;
         owners[1] = owner2;
         owners[2] = owner3;
-        
-        // Deploy implementation
-        MultiSigWallet implementation = new MultiSigWallet();
-        
-        // Deploy proxy and initialize
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
-        
-        // Deploy proxy with implementation address and init data
-        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
+        multiSigWallet = new MultiSigWallet();
+        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
     }
 
     // ============ Helper Functions ============
