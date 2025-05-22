@@ -9,6 +9,7 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {MSW_NotOwner, MSW_OldOwnerInvalid, MSW_TxDoesNotExist, MSW_TxAlreadyExecuted, MSW_TxAlreadySigned, MSW_TxNotSigned, MSW_NotEnoughConfirmations, MSW_InsufficientBalance, MSW_TransactionFailed, MSW_DuplicateOwner, MSW_InvalidOwnerAddress, MSW_EmptyOwnersList, MSW_ConfirmationsExceedOwnersCount, MSW_InvalidRequireConfirmations, MSW_InvalidFunctionSelector, MSW_TransactionExpired} from "../src/MultiSigWalletErrors.sol";
 import {TransactionSubmitted, TransactionConfirmed, ConfirmationRevoked, TransactionExecuted, Deposited, OwnerAdded, OwnerRemoved, RequireConfirmationsChanged} from "../src/MultiSigWalletEvents.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title MultiSigWalletTest
 /// @notice Test suite for the MultiSigWallet contract
@@ -29,8 +30,19 @@ contract MultiSigWalletTest is Test {
         owners[0] = owner1;
         owners[1] = owner2;
         owners[2] = owner3;
-        multiSigWallet = new MultiSigWallet();
-        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
+        
+        // Deploy implementation
+        MultiSigWallet implementation = new MultiSigWallet();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(
+            MultiSigWallet.initialize.selector,
+            owners,
+            requiredConfirmations
+        );
+        
+        // Deploy proxy with implementation address and init data
+        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
     }
 
     // ============ Helper Functions ============
@@ -546,8 +558,18 @@ contract MultiSigWalletTest is Test {
         address oldOwner = owners[1];
 
         owners.pop();
-        multiSigWallet = new MultiSigWallet();
-        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
+        // Deploy implementation
+        MultiSigWallet implementation = new MultiSigWallet();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(
+            MultiSigWallet.initialize.selector,
+            owners,
+            requiredConfirmations
+        );
+        
+        // Deploy proxy with implementation address and init data
+        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
 
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
