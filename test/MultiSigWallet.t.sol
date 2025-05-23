@@ -94,9 +94,16 @@ contract MultiSigWalletTest is Test {
 
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
-        multiSigWallet = new MultiSigWallet();
-        vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector)); // Need to R&D
-        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
+        MultiSigWallet implementation = new MultiSigWallet();
+        
+        bytes memory initData = abi.encodeWithSelector(
+            MultiSigWallet.initialize.selector,
+            owners,
+            requiredConfirmations
+        );
+        
+        vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector));
+        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
     }
 
     function testRevert_ownerCannotBeZeroAddress() public {
