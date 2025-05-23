@@ -30,8 +30,19 @@ contract MultiSigWalletTest is Test {
         owners[0] = owner1;
         owners[1] = owner2;
         owners[2] = owner3;
-        multiSigWallet = new MultiSigWallet();
-        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
+        // Deploy implementation
+        MultiSigWallet implementation = new MultiSigWallet();
+        
+        // Deploy proxy and initialize
+        bytes memory initData = abi.encodeWithSelector(
+            MultiSigWallet.initialize.selector,
+            owners,
+            requiredConfirmations
+        );
+        
+        // Deploy proxy with implementation address and init data
+        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
+
     }
 
     // ============ Helper Functions ============
