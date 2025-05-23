@@ -79,9 +79,16 @@ contract MultiSigWalletTest is Test {
 
     function test_emptyOwners() public {
         owners = new address[](0);
-        multiSigWallet = new MultiSigWallet();
+        MultiSigWallet implementation = new MultiSigWallet();
+
+        bytes memory initData = abi.encodeWithSelector(
+            MultiSigWallet.initialize.selector,
+            owners,
+            requiredConfirmations
+        );
+
         vm.expectRevert(abi.encodeWithSelector(MSW_EmptyOwnersList.selector)); // Need to R&D
-        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
+        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
     }
 
     function test_requiredConfirmations() public {
