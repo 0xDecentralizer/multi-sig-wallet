@@ -59,9 +59,15 @@ contract MultiSigWalletTest is Test {
     }
 
     // ============ Constructor Tests ============
-    function test_initateWallet() public {
-        multiSigWallet = new MultiSigWallet();
-        multiSigWallet.initialize(owners, requiredConfirmations); // Need to R&D
+    function test_initiateWallet() public {
+        MultiSigWallet implementation = new MultiSigWallet();
+        
+        bytes memory initData = abi.encodeWithSelector(
+            MultiSigWallet.initialize.selector,
+            owners,
+            requiredConfirmations
+        );
+        multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
 
         assertEq(multiSigWallet.requiredConfirmations(), 2);
         assertEq(multiSigWallet.getOwnerCount(), 3);
