@@ -7,8 +7,8 @@ import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {MSW_NotOwner, MSW_OldOwnerInvalid, MSW_TxDoesNotExist, MSW_TxAlreadyExecuted, MSW_TxAlreadySigned, MSW_TxNotSigned, MSW_NotEnoughConfirmations, MSW_InsufficientBalance, MSW_TransactionFailed, MSW_DuplicateOwner, MSW_InvalidOwnerAddress, MSW_EmptyOwnersList, MSW_ConfirmationsExceedOwnersCount, MSW_InvalidRequireConfirmations, MSW_InvalidFunctionSelector, MSW_TransactionExpired} from "../src/MultiSigWalletErrors.sol";
-import {TransactionSubmitted, TransactionConfirmed, ConfirmationRevoked, TransactionExecuted, Deposited, OwnerAdded, OwnerRemoved, RequireConfirmationsChanged} from "../src/MultiSigWalletEvents.sol";
+import "../src/MultiSigWalletErrors.sol";
+import "../src/MultiSigWalletEvents.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title MultiSigWalletTest
@@ -890,4 +890,15 @@ contract MultiSigWalletTest is Test {
         uint256 newBalance = address(multiSigWallet).balance;
         assertEq(newBalance, initialBalance + 1 ether, "Deposit to MultiSigWallet failed");
     }
+
+    function test_getOwners() public view {
+        address[] memory _owners = multiSigWallet.getOwners();
+
+        assertEq(_owners[0], owner1);
+        assertEq(_owners[1], owner2);
+        assertEq(_owners[2], owner3);
+
+        assertEq(multiSigWallet.getOwnerCount(), owners.length);
+    }
+
 }
