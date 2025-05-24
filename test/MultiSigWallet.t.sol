@@ -141,6 +141,18 @@ contract MultiSigWalletTest is Test {
     }
 
     // ============ Transaction Submission Tests ============
+
+    
+    function testRevert_submitTxWithInvalidData() public {
+        address target = address(0x1234);
+        uint256 value = 1 ether;
+        bytes memory data = new bytes(2048 * 2048);
+        
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MSW_TransactionDataTooLarge.selector));
+        multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
+    }
+
     function testRevert_NonOwnerCannotCallSubmitTransaction() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
