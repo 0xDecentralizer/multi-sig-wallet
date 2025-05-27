@@ -145,7 +145,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         } else if (selector == this.submitRemoveOwner.selector) {
             _executeRemoveOwner(txData, transaction);
         } else if (selector == this.changeRequiredConfirmations.selector) {
-            _executeChangeRequiredConfirmations(txData);
+            _executeChangeRequiredConfirmations(txData, transaction);
         } else {
             _executeTransaction(txData, _txIndex, transaction);
         }
@@ -255,10 +255,11 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         emit OwnerRemoved(oldOwner);
     }
 
-    function _executeChangeRequiredConfirmations(bytes memory txData) internal {
+    function _executeChangeRequiredConfirmations(bytes memory txData, Transaction storage transaction) internal {
         uint8 oldReqConf = requiredConfirmations;
         uint8 newReqConf = abi.decode(txData.slice(4,txData.length - 4), (uint8));
-
+        
+        transaction.executed = true;
         requiredConfirmations = newReqConf;
 
         emit RequireConfirmationsChanged(oldReqConf, newReqConf);
