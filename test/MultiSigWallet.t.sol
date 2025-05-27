@@ -886,6 +886,9 @@ contract MultiSigWalletTest is Test {
 
         // Verify the change
         assertEq(multiSigWallet.requiredConfirmations(), newRequiredConfirmations);
+
+        (,,,, bool executed,,) = multiSigWallet.transactions(changeReqConfTxIndex);
+        assertEq(executed, true, "Transaction should be executed");
     }
 
     function testEmit_DepositToMultiSigWallet() public {
