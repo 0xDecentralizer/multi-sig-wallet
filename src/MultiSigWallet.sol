@@ -126,10 +126,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     /// @param _txIndex The index of the transaction to execute
     function executeTransaction(uint256 _txIndex) external onlyOwner nonReentrant {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
-        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired();
 
         Transaction storage transaction = transactions[_txIndex];
-
+        if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
         if (transaction.executed) revert MSW_TxAlreadyExecuted();
         if (transaction.numConfirmations < requiredConfirmations) revert MSW_NotEnoughConfirmations();
 
