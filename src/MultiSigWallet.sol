@@ -80,6 +80,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         uint256 _expiration
     ) external onlyOwner {
         if (_data.length > MAX_TRANSACTION_DATA_SIZE) revert MSW_TransactionDataTooLarge();
+        if (_to == address(0)) revert MSW_InvalidRecipientAddress();
         Transaction memory newTransaction = Transaction({
             token: _token, // test
             to: _to,
