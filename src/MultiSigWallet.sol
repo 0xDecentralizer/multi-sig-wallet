@@ -100,9 +100,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         
         Transaction storage transaction = transactions[_txIndex];
+        if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
         if (transaction.executed) revert MSW_TxAlreadyExecuted();
         if (isConfirmed[msg.sender][_txIndex]) revert MSW_TxAlreadySigned();
-        if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
 
         transaction.numConfirmations += 1;
         isConfirmed[msg.sender][_txIndex] = true;
@@ -116,9 +116,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
 
         Transaction storage transaction = transactions[_txIndex];
+        if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
         if (transaction.executed) revert MSW_TxAlreadyExecuted();
         if (!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
-        if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
 
         transaction.numConfirmations -= 1;
         isConfirmed[msg.sender][_txIndex] = false;
