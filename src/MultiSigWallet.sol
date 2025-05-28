@@ -114,11 +114,13 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     /// @param _txIndex The index of the transaction to revoke confirmation for
     function revokeConfirmation(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
-        if (transactions[_txIndex].executed) revert MSW_TxAlreadyExecuted();
-        if (!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
-        if (block.timestamp > transactions[_txIndex].expiration) revert MSW_TransactionExpired();
 
-        transactions[_txIndex].numConfirmations -= 1;
+        Transaction storage transaction = transactions[_txIndex];
+        if (transaction.executed) revert MSW_TxAlreadyExecuted();
+        if (!isConfirmed[msg.sender][_txIndex]) revert MSW_TxNotSigned();
+        if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
+
+        transaction.numConfirmations -= 1;
         isConfirmed[msg.sender][_txIndex] = false;
 
         emit ConfirmationRevoked(msg.sender, _txIndex);
