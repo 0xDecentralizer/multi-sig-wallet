@@ -6,14 +6,14 @@ import "./MultiSigWalletErrors.sol";
 import "./MultiSigWalletEvents.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {ReentrancyGuardUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
-import "solidity-bytes-utils/BytesLib.sol";
+import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
 /// @dev Implements a multi-signature wallet with configurable number of required confirmations
 contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
-    using BytesLib for bytes;
+    using Bytes for bytes;
 
     // ============ Constants ============
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
@@ -233,7 +233,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
 
     // ============ Internal Functions ============
     function _executeAddOwner(bytes memory txData, Transaction storage transaction) internal {
-        address newOwner = abi.decode(txData.slice(4, txData.length - 4), (address));
+        address newOwner = abi.decode(txData.slice(4), (address));
 
         isOwner[newOwner] = true;
         owners.push(newOwner);
@@ -243,7 +243,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     function _executeRemoveOwner(bytes memory txData, Transaction storage transaction) internal {
-        address oldOwner = abi.decode(txData.slice(4,txData.length - 4), (address));
+        address oldOwner = abi.decode(txData.slice(4), (address));
 
         isOwner[oldOwner] = false;
 
@@ -261,7 +261,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
 
     function _executeChangeRequiredConfirmations(bytes memory txData, Transaction storage transaction) internal {
         uint8 oldReqConf = requiredConfirmations;
-        uint8 newReqConf = abi.decode(txData.slice(4,txData.length - 4), (uint8));
+        uint8 newReqConf = abi.decode(txData.slice(4), (uint8));
         
         transaction.executed = true;
         requiredConfirmations = newReqConf;
