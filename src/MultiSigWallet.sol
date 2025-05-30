@@ -17,6 +17,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
 
     // ============ Constants ============
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
+    address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
 
     // ============ Structs ============
     struct Transaction {
@@ -272,7 +273,11 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     function _executeTransaction(bytes memory txData, uint256 _txIndex, Transaction storage transaction) internal {
         transaction.executed = true;
 
-        if (transaction.token != address(0x0)) {
+        if (transaction.token == NATIVE_TOKEN) {
+            if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
+            (bool success,) = transaction.to.call{value: transaction.value}(txData);
+            if (!success) revert MSW_TransactionFailed();
+        } else {
             if (transaction.value > IERC20(transaction.token).balanceOf(address(this))) {
                 revert MSW_InsufficientBalance();
             }
@@ -280,14 +285,6 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
                 abi.encodeWithSelector(IERC20.transfer.selector, transaction.to, transaction.value)
             );
             if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert MSW_TransactionFailed();
-
-            // bool success = IERC20(transaction.token).transfer(transaction.to, transaction.value);
-            // // bytes memory data = success ? abi.encode(true) : "";
-            // if (!success /** || (data.length != 0 && abi.decode(data, (bool)))*/) revert MSW_TransactionFailed();
-        } else {
-            if (transaction.value > address(this).balance) revert MSW_InsufficientBalance();
-            (bool success,) = transaction.to.call{value: transaction.value}(txData);
-            if (!success) revert MSW_TransactionFailed();
         }
         emit TransactionExecuted(msg.sender, _txIndex);
     }
