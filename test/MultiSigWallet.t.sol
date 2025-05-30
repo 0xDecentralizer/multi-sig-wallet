@@ -153,6 +153,14 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
     }
 
+    function testRevert_submitTxWithZeroAddress() public {
+        address target = address(0);
+        
+        vm.prank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MSW_InvalidRecipientAddress.selector));
+        multiSigWallet.submitTransaction(token, target, 1 ether, "", expirationTime);
+    }
+
     function testRevert_NonOwnerCannotCallSubmitTransaction() public {
         address nonOwner = address(0xDe);
         vm.label(nonOwner, "NonOwner");
