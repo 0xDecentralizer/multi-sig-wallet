@@ -176,6 +176,7 @@ contract MultiSigWalletTest is Test {
         uint256 value = 1 ether;
         uint256 txIndex = 0;
         bytes memory data = "0x123";
+        uint256 expectedExpirationTime = block.timestamp + expirationTime;
 
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
@@ -198,7 +199,7 @@ contract MultiSigWalletTest is Test {
         assertEq(txData, data, "Transaction data mismatch");
         assertEq(executed, false, "Transaction should not be executed yet");
         assertEq(numConfirmations, 0, "Transaction should start with 0 confirmations");
-        assertLt(block.timestamp, block.timestamp + expiration, "Transaction should not be expired");
+        assertEq(expiration, expectedExpirationTime, "Transaction should not be expired");
         assertEq(tokenAddress, address(0x0), "Token address mismatch");
     }
 
