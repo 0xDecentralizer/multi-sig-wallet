@@ -18,10 +18,11 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     // ============ Constants ============
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
     address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
+    uint256 constant TIME_LOCK = 1 days;
 
     // ============ Structs ============
     struct Transaction {
-        address token; // test
+        address token;
         address to;
         uint256 value;
         bytes data;
@@ -74,7 +75,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     /// @param _value The amount of ETH to send
     /// @param _data The transaction data
     function submitTransaction(
-        address _token, // test
+        address _token,
         address _to,
         uint256 _value,
         bytes memory _data,
@@ -83,7 +84,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         if (_data.length > MAX_TRANSACTION_DATA_SIZE) revert MSW_TransactionDataTooLarge();
         if (_to == address(0)) revert MSW_InvalidRecipientAddress();
         Transaction memory newTransaction = Transaction({
-            token: _token, // test
+            token: _token,
             to: _to,
             value: _value,
             data: _data,
