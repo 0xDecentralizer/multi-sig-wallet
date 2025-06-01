@@ -18,7 +18,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     // ============ Constants ============
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
     address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
-    uint256 constant TIME_LOCK = 1 days;
+    uint256 constant TIME_LOCK = 1 days; // unused for now
 
     // ============ Structs ============
     struct Transaction {
@@ -128,6 +128,8 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
 
         emit ConfirmationRevoked(msg.sender, _txIndex);
     }
+
+    function confirmMultipleTransactions(uint256[] memory _txIndices) external onlyOwner {}
 
     /// @notice Execute a confirmed transaction
     /// @param _txIndex The index of the transaction to execute
