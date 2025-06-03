@@ -20,13 +20,6 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
     uint256 constant TIME_LOCK = 1 days; // unused for now
 
-    enum TransactionType {
-        ADD_OWNER,
-        REMOVE_OWNER,
-        CHANGE_REQUIRED_CONFIRMATIONS,
-        EXECUTE_TRANSACTION
-    }
-
     // ============ Structs ============
     struct Transaction {
         address token;
