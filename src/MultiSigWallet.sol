@@ -113,6 +113,22 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         emit TransactionConfirmed(msg.sender, _txIndex);
     }
 
+    function confirmMultipleTransactions(uint256[] memory _txIndices) external onlyOwner {
+        for (uint256 i = 0; i < _txIndices.length; i++) {
+            uint256 txIndex = _txIndices[i];
+            if (txIndex >= transactions.length) revert MSW_TxDoesNotExist();
+
+            Transaction storage transaction = transactions[txIndex];
+            if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
+            if (transaction.executed) revert MSW_TxAlreadyExecuted();
+            if (isConfirmed[msg.sender][txIndex]) revert MSW_TxAlreadySigned();
+    
+            transaction.numConfirmations += 1;
+            isConfirmed[msg.sender][txIndex] = true;
+            emit TransactionConfirmed(msg.sender, txIndex);
+        }
+    }
+
     /// @notice Revoke a transaction confirmation
     /// @param _txIndex The index of the transaction to revoke confirmation for
     function revokeConfirmation(uint256 _txIndex) external onlyOwner {
@@ -128,8 +144,6 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
 
         emit ConfirmationRevoked(msg.sender, _txIndex);
     }
-
-    function confirmMultipleTransactions(uint256[] memory _txIndices) external onlyOwner {}
 
     /// @notice Execute a confirmed transaction
     /// @param _txIndex The index of the transaction to execute
