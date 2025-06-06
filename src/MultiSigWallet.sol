@@ -19,6 +19,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
     address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
     uint256 constant TIME_LOCK = 1 days; // unused for now
+    uint256 constant MSX_MULTI_CONFIRM = 3;
 
     // ============ Structs ============
     struct Transaction {
