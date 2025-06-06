@@ -115,6 +115,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     function confirmMultipleTransactions(uint256[] memory _txIndices) external onlyOwner {
+        if (_txIndices.length > MAX_MULTI_CONFIRM) revert MSW_MultiConfirmExeedMax();
         for (uint256 i = 0; i < _txIndices.length; i++) {
             uint256 txIndex = _txIndices[i];
             if (txIndex >= transactions.length) revert MSW_TxDoesNotExist();
