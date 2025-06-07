@@ -281,11 +281,8 @@ contract MultiSigWalletTest is Test {
     }
 
     function testRevert_confirmMultipleTxDoesntExist() public {
-        uint256[] memory txIndices = new uint256[](3);
-        txIndices[0] = 0;
-        txIndices[1] = 1;
-        txIndices[2] = 2;
-        
+        uint256[3] memory txIndices = [uint256(0), uint256(1), uint256(2)];
+
         vm.startPrank(owner1);
         multiSigWallet.submitTransaction(token, address(0x12340), 1 wei, "", expirationTime);
         multiSigWallet.submitAddOwner(address(0x4), expirationTime);
