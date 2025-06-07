@@ -20,4 +20,4 @@ error MSW_InvalidFunctionSelector();
 error MSW_TransactionExpired();
 error MSW_TransactionDataTooLarge();
 error MSW_InvalidRecipientAddress();
-error MSW_MultiConfirmExeedMax();
+error MSW_TooManyConfirmations();

@@ -18,8 +18,8 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     // ============ Constants ============
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
     address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
-    uint256 constant TIME_LOCK = 1 days; // unused for now
-    uint256 constant MSX_MULTI_CONFIRM = 3;
+    uint256 constant TIME_LOCK = 1 days; // Unused for now
+    uint256 constant MAX_MULTI_CONFIRM = 3; // Up to 3 transactions can be confirmed at once
 
     // ============ Structs ============
     struct Transaction {
@@ -115,7 +115,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     function confirmMultipleTransactions(uint256[] memory _txIndices) external onlyOwner {
-        if (_txIndices.length > MAX_MULTI_CONFIRM) revert MSW_MultiConfirmExeedMax();
+        if (_txIndices.length > MAX_MULTI_CONFIRM) revert MSW_TooManyConfirmations();
         for (uint256 i = 0; i < _txIndices.length; i++) {
             uint256 txIndex = _txIndices[i];
             if (txIndex >= transactions.length) revert MSW_TxDoesNotExist();
