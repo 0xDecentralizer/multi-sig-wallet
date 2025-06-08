@@ -302,9 +302,26 @@ contract MultiSigWalletTest is Test {
         txIndices[3] = 3;
 
         vm.startPrank(owner1);
-        multiSigWallet.submitTransaction(token, address(0x12340), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
         multiSigWallet.submitAddOwner(address(0x4), expirationTime);
         vm.expectRevert(abi.encodeWithSelector(MSW_TooManyConfirmations.selector));
+        multiSigWallet.confirmMultipleTransactions(txIndices);
+        vm.stopPrank;
+    }
+
+    function testRevert_ConfirmMultipleTxExpired() public {
+        uint256[] memory txIndices = new uint256[](2);
+        txIndices[0] = 0;
+        txIndices[1] = 1;
+
+        vm.prank(owner1);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
+        vm.warp(block.timestamp + 2 weeks);
+
+        vm.startPrank(owner1);
+        multiSigWallet.submitAddOwner(address(0x4), expirationTime);
+
+        vm.expectRevert(abi.encodeWithSelector(MSW_TransactionExpired.selector));
         multiSigWallet.confirmMultipleTransactions(txIndices);
         vm.stopPrank;
     }
