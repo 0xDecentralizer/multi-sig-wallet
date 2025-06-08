@@ -342,7 +342,11 @@ contract MultiSigWalletTest is Test {
         vm.startPrank(owner2);
         multiSigWallet.confirmTransaction(txIndices[0]); // Second confirmation for txIndices[0] - (first tx)
         multiSigWallet.executeTransaction(txIndices[0]); // Execute txIndices[0] - (first tx)
-        vm.stopPrank;     
+        vm.stopPrank;
+        
+        vm.startPrank(owner1);
+        vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadyExecuted.selector));
+        multiSigWallet.confirmMultipleTransactions(txIndices);   
     }
 
     // ============ Transaction Execution Tests ============
