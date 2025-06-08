@@ -264,7 +264,7 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.confirmTransaction(txIndex);
     }
 
-    function test_confirmTransactionByOwner() public {
+    function test_confirmTxByOwner() public {
         uint256 txIndex = 0;
 
         vm.prank(owner1);
@@ -294,7 +294,7 @@ contract MultiSigWalletTest is Test {
         vm.stopPrank;
     }
 
-    function testRevert_ConfirmMultipleTransactionsExceedsMaxLimit() public {
+    function testRevert_ConfirmMultipleTxExceedsMaxLimit() public {
         uint256[] memory txIndices = new uint256[](4);
         txIndices[0] = 0;
         txIndices[1] = 1;
@@ -324,6 +324,10 @@ contract MultiSigWalletTest is Test {
         vm.expectRevert(abi.encodeWithSelector(MSW_TransactionExpired.selector));
         multiSigWallet.confirmMultipleTransactions(txIndices);
         vm.stopPrank;
+    }
+
+    function testRevert_ConfirmMulTipleTxAlreadyExecuted() public {
+
     }
 
     // ============ Transaction Execution Tests ============
