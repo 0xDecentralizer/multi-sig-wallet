@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 /// @title Proxy
 /// @notice TransparentUpgradeableProxy for MultiSigWallet
 contract Proxy is TransparentUpgradeableProxy {
-    constructor(
-        address _logic,
-        address admin_,
-        bytes memory _data
-    ) TransparentUpgradeableProxy(_logic, admin_, _data) {}
+    constructor(address _logic, address admin_, bytes memory _data)
+        TransparentUpgradeableProxy(_logic, admin_, _data)
+    {}
 }

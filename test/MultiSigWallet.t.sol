@@ -24,7 +24,7 @@ contract MultiSigWalletTest is Test {
     uint256 expirationTime = 604800; // 1 weeks
     address token = address(0x0); // 0x0 address refers to native token ETH
 
-   // ============ Setup ============
+    // ============ Setup ============
     function setUp() public {
         owners = new address[](3);
         owners[0] = owner1;
@@ -32,17 +32,13 @@ contract MultiSigWalletTest is Test {
         owners[2] = owner3;
         // Deploy implementation
         MultiSigWallet implementation = new MultiSigWallet();
-        
+
         // Deploy proxy and initialize
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
-        
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
+
         // Deploy proxy with implementation address and init data
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
-
     }
 
     // ============ Helper Functions ============
@@ -61,12 +57,9 @@ contract MultiSigWalletTest is Test {
     // ============ Constructor Tests ============
     function test_initiateWallet() public {
         MultiSigWallet implementation = new MultiSigWallet();
-        
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
+
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
 
         assertEq(multiSigWallet.requiredConfirmations(), 2);
@@ -87,11 +80,8 @@ contract MultiSigWalletTest is Test {
         owners = new address[](0);
         MultiSigWallet implementation = new MultiSigWallet();
 
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
 
         vm.expectRevert(abi.encodeWithSelector(MSW_EmptyOwnersList.selector)); // Need to R&D
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
@@ -102,11 +92,8 @@ contract MultiSigWalletTest is Test {
         owners.pop();
         MultiSigWallet implementation = new MultiSigWallet();
 
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
 
         vm.expectRevert(abi.encodeWithSelector(MSW_ConfirmationsExceedOwnersCount.selector));
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
@@ -115,13 +102,10 @@ contract MultiSigWalletTest is Test {
     function test_duplicatedOwners() public {
         owners.push(address(0x1));
         MultiSigWallet implementation = new MultiSigWallet();
-        
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
-        
+
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
+
         vm.expectRevert(abi.encodeWithSelector(MSW_DuplicateOwner.selector));
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData)))); // Need to R&D
     }
@@ -129,25 +113,21 @@ contract MultiSigWalletTest is Test {
     function testRevert_ownerCannotBeZeroAddress() public {
         owners.push(address(0));
         MultiSigWallet implementation = new MultiSigWallet();
-        
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
-        
+
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
+
         vm.expectRevert(abi.encodeWithSelector(MSW_InvalidOwnerAddress.selector)); // Need to R&D
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
     }
 
     // ============ Transaction Submission Tests ============
 
-    
     function testRevert_submitTxWithInvalidData() public {
         address target = address(0x1234);
         uint256 value = 1 ether;
         bytes memory data = new bytes(2048 * 2048);
-        
+
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MSW_TransactionDataTooLarge.selector));
         multiSigWallet.submitTransaction(token, target, value, data, expirationTime);
@@ -155,7 +135,7 @@ contract MultiSigWalletTest is Test {
 
     function testRevert_submitTxWithZeroAddress() public {
         address target = address(0);
-        
+
         vm.prank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MSW_InvalidRecipientAddress.selector));
         multiSigWallet.submitTransaction(token, target, 1 ether, "", expirationTime);
@@ -338,15 +318,15 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, address(0x4321), 2 wei, "", expirationTime); // = txIndices[1] - (second tx)
         multiSigWallet.confirmTransaction(txIndices[0]); // First confirmation for txIndices[0] - (first tx)
         vm.stopPrank;
-        
+
         vm.startPrank(owner2);
         multiSigWallet.confirmTransaction(txIndices[0]); // Second confirmation for txIndices[0] - (first tx)
         multiSigWallet.executeTransaction(txIndices[0]); // Execute txIndices[0] - (first tx)
         vm.stopPrank;
-        
+
         vm.startPrank(owner1);
         vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadyExecuted.selector));
-        multiSigWallet.confirmMultipleTransactions(txIndices);   
+        multiSigWallet.confirmMultipleTransactions(txIndices);
     }
 
     // ============ Transaction Execution Tests ============
@@ -684,12 +664,9 @@ contract MultiSigWalletTest is Test {
         owners.pop();
 
         MultiSigWallet implementation = new MultiSigWallet();
-        
-        bytes memory initData = abi.encodeWithSelector(
-            MultiSigWallet.initialize.selector,
-            owners,
-            requiredConfirmations
-        );
+
+        bytes memory initData =
+            abi.encodeWithSelector(MultiSigWallet.initialize.selector, owners, requiredConfirmations);
 
         multiSigWallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
 
@@ -993,5 +970,4 @@ contract MultiSigWalletTest is Test {
 
         assertEq(multiSigWallet.getOwnerCount(), owners.length);
     }
-
 }

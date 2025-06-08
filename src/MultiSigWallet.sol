@@ -5,9 +5,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./MultiSigWalletErrors.sol";
 import "./MultiSigWalletEvents.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {ReentrancyGuardUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from
+    "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
-
 
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
@@ -17,7 +17,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
 
     // ============ Constants ============
     uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
-    address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH) 
+    address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH)
     uint256 constant TIME_LOCK = 1 days; // Unused for now
     uint256 constant MAX_MULTI_CONFIRM = 3; // Up to 3 transactions can be confirmed at once
 
@@ -75,13 +75,10 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     /// @param _to The address to send the transaction to
     /// @param _value The amount of ETH to send
     /// @param _data The transaction data
-    function submitTransaction(
-        address _token,
-        address _to,
-        uint256 _value,
-        bytes memory _data,
-        uint256 _expiration
-    ) external onlyOwner {
+    function submitTransaction(address _token, address _to, uint256 _value, bytes memory _data, uint256 _expiration)
+        external
+        onlyOwner
+    {
         if (_data.length > MAX_TRANSACTION_DATA_SIZE) revert MSW_TransactionDataTooLarge();
         if (_to == address(0)) revert MSW_InvalidRecipientAddress();
         Transaction memory newTransaction = Transaction({
@@ -102,7 +99,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     /// @param _txIndex The index of the transaction to confirm
     function confirmTransaction(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
-        
+
         Transaction storage transaction = transactions[_txIndex];
         if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
         if (transaction.executed) revert MSW_TxAlreadyExecuted();
@@ -124,7 +121,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
             if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
             if (transaction.executed) revert MSW_TxAlreadyExecuted();
             if (isConfirmed[msg.sender][txIndex]) revert MSW_TxAlreadySigned();
-    
+
             transaction.numConfirmations += 1;
             isConfirmed[msg.sender][txIndex] = true;
             emit TransactionConfirmed(msg.sender, txIndex);
@@ -151,7 +148,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     /// @param _txIndex The index of the transaction to execute
     function executeTransaction(uint256 _txIndex) external onlyOwner nonReentrant {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
-        
+
         Transaction storage transaction = transactions[_txIndex];
         if (block.timestamp > transaction.expiration) revert MSW_TransactionExpired();
         if (transaction.executed) revert MSW_TxAlreadyExecuted();
@@ -282,7 +279,7 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     function _executeChangeRequiredConfirmations(bytes memory txData, Transaction storage transaction) internal {
         uint8 oldReqConf = requiredConfirmations;
         uint8 newReqConf = abi.decode(txData.slice(4), (uint8));
-        
+
         transaction.executed = true;
         requiredConfirmations = newReqConf;
 
