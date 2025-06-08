@@ -327,7 +327,22 @@ contract MultiSigWalletTest is Test {
     }
 
     function testRevert_ConfirmMulTipleTxAlreadyExecuted() public {
+        uint256[] memory txIndices = new uint256[](2);
+        txIndices[0] = 0;
+        txIndices[1] = 1;
 
+        vm.deal(address(multiSigWallet), 1 ether);
+
+        vm.startPrank(owner1);
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime); // = txIndices[0] - (first tx)
+        multiSigWallet.submitTransaction(token, address(0x4321), 2 wei, "", expirationTime); // = txIndices[1] - (second tx)
+        multiSigWallet.confirmTransaction(txIndices[0]); // First confirmation for txIndices[0] - (first tx)
+        vm.stopPrank;
+        
+        vm.startPrank(owner2);
+        multiSigWallet.confirmTransaction(txIndices[0]); // Second confirmation for txIndices[0] - (first tx)
+        multiSigWallet.executeTransaction(txIndices[0]); // Execute txIndices[0] - (first tx)
+        vm.stopPrank;     
     }
 
     // ============ Transaction Execution Tests ============
