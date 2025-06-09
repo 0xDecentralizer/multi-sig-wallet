@@ -353,6 +353,9 @@ contract MultiSigWalletTest is Test {
 
         multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
         multiSigWallet.submitTransaction(token, address(0x4321), 2 wei, "", expirationTime);
+
+        vm.expectEmit(true, true, false, false);
+        emit TransactionConfirmed(owner1, txIndices[0]);
         multiSigWallet.confirmMultipleTransactions(txIndices);
 
         vm.stopPrank;
