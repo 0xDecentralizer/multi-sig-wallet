@@ -338,10 +338,31 @@ contract MultiSigWalletTest is Test {
         multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
         multiSigWallet.submitTransaction(token, address(0x4321), 2 wei, "", expirationTime);
         multiSigWallet.confirmTransaction(txIndices[0]); // First confirmation for txIndices[0] - (first tx)
-        
+
         vm.expectRevert(abi.encodeWithSelector(MSW_TxAlreadySigned.selector));
         multiSigWallet.confirmMultipleTransactions(txIndices); // Confirm both transactions
         vm.stopPrank;
+    }
+
+    function test_ConfirmMultipleTx() public {
+        uint256[] memory txIndices = new uint256[](2);
+        txIndices[0] = 0;
+        txIndices[1] = 1;
+
+        vm.startPrank(owner1);
+
+        multiSigWallet.submitTransaction(token, address(0x1234), 1 wei, "", expirationTime);
+        multiSigWallet.submitTransaction(token, address(0x4321), 2 wei, "", expirationTime);
+        multiSigWallet.confirmMultipleTransactions(txIndices);
+
+        vm.stopPrank;
+
+        // Check confirmations for both transactions
+        (,,,,, uint256 numConfirmationsForFirstTx,) = multiSigWallet.transactions(txIndices[0]);
+        (,,,,, uint256 numConfirmationsForSecondTx,) = multiSigWallet.transactions(txIndices[1]);
+
+        assertEq(numConfirmationsForFirstTx, 1, "First transaction should have 1 confirmation");
+        assertEq(numConfirmationsForSecondTx, 1, "Second transaction should have 1 confirmation");
     }
 
     // ============ Transaction Execution Tests ============
