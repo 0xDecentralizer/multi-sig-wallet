@@ -13,15 +13,9 @@ event TransactionSubmitted(
 );
 
 event TransactionConfirmed(address indexed owner, uint256 indexed txIndex);
-
 event ConfirmationRevoked(address indexed owner, uint256 indexed txIndex);
-
 event TransactionExecuted(address indexed owner, uint256 indexed txIndex);
-
 event Deposited(address indexed sender, uint256 value);
-
 event OwnerAdded(address indexed owner);
-
 event OwnerRemoved(address indexed owner);
-
 event RequireConfirmationsChanged(uint8 indexed oldReqConf, uint8 indexed newReqConf);
