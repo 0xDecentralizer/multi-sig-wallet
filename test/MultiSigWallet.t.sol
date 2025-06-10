@@ -367,8 +367,8 @@ contract MultiSigWalletTest is Test {
         assertEq(numConfirmationsForSecondTx, 1, "Second transaction should have 1 confirmation");
 
         // Check isConfirmed for both transactions
-        bool isConfirmedForFirstTx = multiSigWallet.isConfirmed (owner1, txIndices[0]);
-        bool isConfirmedForSecondTx = multiSigWallet.isConfirmed (owner1, txIndices[1]);
+        bool isConfirmedForFirstTx = multiSigWallet.isConfirmed(owner1, txIndices[0]);
+        bool isConfirmedForSecondTx = multiSigWallet.isConfirmed(owner1, txIndices[1]);
         assertTrue(isConfirmedForFirstTx, "Owner1 should have confirmed the first transaction");
         assertTrue(isConfirmedForSecondTx, "Owner1 should have confirmed the second transaction");
     }
