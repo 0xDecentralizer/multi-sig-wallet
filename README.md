@@ -1,109 +1,123 @@
 # Multi-Signature Wallet
 
-A robust, upgradeable **multi-signature wallet** smart contract built with Solidity. Designed for secure, decentralized management of funds by multiple owners.
+A secure, upgradeable multi-signature wallet smart contract built with Solidity. This contract enables decentralized management of funds through multi-owner governance.
 
----
+## Features
 
-## Key Features
-- **Multi-Owner Governance:** Transactions require multiple owner approvals before execution
-- **Secure Transaction Flow:** Owners can submit, confirm, revoke, and execute transactions safely
-- **Transparent Auditing:** Events emitted for all critical actions for easy tracking and integration
-- **Flexibility:** Customizable number of required confirmations during deployment
-- **Token Support:** Handles both native tokens (ETH) and ERC20 tokens
-- **Owner Management:** Add and remove owners through multi-sig consensus
-- **Dynamic Configuration:** Adjustable required confirmations through owner voting
-- **Transaction Expiration:** Configurable expiration time for pending transactions
-- **Enhanced Security:** Comprehensive error handling and validation checks
+- 🔐 Multi-owner governance with configurable confirmation thresholds
+- 💰 Support for both ETH and ERC20 tokens
+- ⚡ Dynamic owner management through multi-sig consensus
+- 🔄 Upgradeable contract architecture
+- ⏱️ Configurable transaction expiration
+- 📝 Comprehensive event logging
+- 🛡️ Extensive security checks and validations
 
----
+## Prerequisites
 
-## Contract Overview
+- Solidity ^0.8.22
+- Foundry
+- OpenZeppelin Contracts
 
-| Component | Description |
-|:----------|:------------|
-| **Owners** | List of authorized wallet controllers |
-| **Transactions** | Struct containing recipient address, amount, token address, call data, execution status, and expiration time |
-| **Confirmations** | Mapping to track which owners have approved each transaction |
-| **Modifiers** | Role-based access control and transaction state validation |
-| **Events** | Comprehensive event system for all wallet operations |
+## Installation
 
----
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/multi-sig-wallet.git
+cd multi-sig-wallet
 
-## Core Functions
-
-### Transaction Management
-- `submitTransaction(address token, address to, uint256 value, bytes data, uint256 expiration)`
-- `confirmTransaction(uint256 txIndex)`
-- `executeTransaction(uint256 txIndex)`
-- `revokeConfirmation(uint256 txIndex)`
-
-### Owner Management
-- `submitAddOwner(address newOwner, uint256 expiration)`
-- `submitRemoveOwner(address ownerToRemove, uint256 expiration)`
-- `changeRequiredConfirmations(uint8 newRequired, uint256 expiration)`
-
-Each function is protected with appropriate access control to ensure wallet integrity.
-
----
-
-## How to Deploy
-
-1. Clone this repository
-2. Deploy the contract with:
-   - **Owners array** (at least one address, no duplicates)
-   - **Required confirmations** (at least 1, not more than the number of owners)
-
-**Example constructor parameters:**
-```plaintext
-owners: [0xOwner1, 0xOwner2, 0xOwner3]
-requiredConfirmations: 2
+# Install dependencies
+forge install
 ```
 
-3. Use Foundry for testing and deployment.
+## Usage
 
----
+### Deployment
 
-## Security Best Practices
-- Owners must be fully trusted parties
-- Critical transactions should require high confirmation thresholds
-- Set appropriate expiration times for transactions
-- Consider implementing time locks for production environments
-- Validate token addresses and amounts before transactions
+Deploy the contract with the following parameters:
 
----
+```solidity
+constructor(
+    address[] memory _owners,
+    uint8 _requiredConfirmations
+)
+```
 
-## Features in Detail
+- `_owners`: Array of owner addresses (minimum 1, no duplicates)
+- `_requiredConfirmations`: Number of required confirmations (minimum 1, maximum owners count)
 
-### Token Support
-- Native ETH transactions
-- ERC20 token transfers
-- Automatic token balance validation
-- Support for custom token contracts
+### Core Functions
 
-### Transaction Expiration
-- Configurable expiration time for each transaction
-- Automatic invalidation of expired transactions
-- Prevents stale transaction execution
+#### Transaction Management
+```solidity
+function submitTransaction(
+    address token,
+    address to,
+    uint256 value,
+    bytes data,
+    uint256 expiration
+) external returns (uint256 txIndex)
 
-### Owner Management
-- Multi-sig consensus for owner changes
-- Validation of owner addresses
-- Prevention of duplicate owners
-- Dynamic adjustment of required confirmations
+function confirmTransaction(uint256 txIndex) external
+function executeTransaction(uint256 txIndex) external
+function revokeConfirmation(uint256 txIndex) external
+```
 
----
+#### Owner Management
+```solidity
+function submitAddOwner(address newOwner, uint256 expiration) external
+function submitRemoveOwner(address ownerToRemove, uint256 expiration) external
+function changeRequiredConfirmations(uint8 newRequired, uint256 expiration) external
+```
 
-## Tech Stack
-- Solidity ^0.8.22
-- Foundry / Hardhat for testing and deployment
-- OpenZeppelin (optional security enhancements)
+## Testing
 
----
+```bash
+# Run all tests
+forge test
+
+# Run specific test file
+forge test --match-path test/MultiSigWallet.t.sol
+```
+
+## Security Considerations
+
+1. **Owner Selection**
+   - Choose trusted owners
+   - Consider using hardware wallets
+   - Implement proper key management
+
+2. **Confirmation Threshold**
+   - Set appropriate confirmation requirements
+   - Consider transaction value and risk level
+   - Implement time locks for critical operations
+
+3. **Transaction Management**
+   - Set reasonable expiration times
+   - Validate token addresses and amounts
+   - Monitor transaction status
+
+## Architecture
+
+The contract system consists of:
+
+- `MultiSigWallet.sol`: Main contract implementation
+- `MultiSigWalletEvents.sol`: Event definitions
+- `MultiSigWalletErrors.sol`: Custom error definitions
+- `Proxy.sol`: Upgradeability proxy
+- `UpgradableSetup.sol`: Upgrade initialization
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
-[MIT License](LICENSE)
 
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Author
-Crafted with focus on security, simplicity, and scalability.
+## Support
+
+For support, please open an issue in the GitHub repository.
