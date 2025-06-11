@@ -12,16 +12,29 @@ import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 /// @title MultiSigWallet
 /// @notice A multi-signature wallet contract that requires multiple confirmations for transactions
 /// @dev Implements a multi-signature wallet with configurable number of required confirmations
+/// @custom:security-contact security@example.com
 contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     using Bytes for bytes;
 
     // ============ Constants ============
-    uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024; // 1MB
-    address constant NATIVE_TOKEN = address(0x0); // Represents native token (ETH)
-    uint256 constant TIME_LOCK = 1 days; // Unused for now
-    uint256 constant MAX_MULTI_CONFIRM = 3; // Up to 3 transactions can be confirmed at once
+    /// @notice Maximum size of transaction data in bytes (1MB)
+    uint256 public constant MAX_TRANSACTION_DATA_SIZE = 1024 * 1024;
+    /// @notice Address representing native token (ETH)
+    address constant NATIVE_TOKEN = address(0x0);
+    /// @notice Time lock period for transactions (currently unused)
+    uint256 constant TIME_LOCK = 1 days;
+    /// @notice Maximum number of transactions that can be confirmed in a single call
+    uint256 constant MAX_MULTI_CONFIRM = 3;
 
     // ============ Structs ============
+    /// @notice Structure representing a transaction in the wallet
+    /// @param token Address of the token to transfer (NATIVE_TOKEN for ETH)
+    /// @param to Recipient address
+    /// @param value Amount to transfer
+    /// @param data Transaction data (empty for simple transfers)
+    /// @param executed Whether the transaction has been executed
+    /// @param numConfirmations Number of confirmations received
+    /// @param expiration Timestamp when the transaction expires
     struct Transaction {
         address token;
         address to;
@@ -33,19 +46,29 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // ============ State Variables ============
+    /// @notice List of wallet owners
     address[] private owners;
+    /// @notice Number of required confirmations for transaction execution
     uint8 public requiredConfirmations;
+    /// @notice Mapping of addresses to their owner status
     mapping(address => bool) public isOwner;
+    /// @notice Mapping of owner address to transaction index to confirmation status
     mapping(address => mapping(uint256 => bool)) public isConfirmed;
+    /// @notice Array of all transactions
     Transaction[] public transactions;
 
     // ============ Modifiers ============
+    /// @notice Restricts function access to wallet owners only
     modifier onlyOwner() {
         if (!isOwner[msg.sender]) revert MSW_NotOwner();
         _;
     }
 
     // ============ Constructor ============
+    /// @notice Initializes the multi-signature wallet
+    /// @param _owners Array of initial owner addresses
+    /// @param _requiredConfirmations Number of required confirmations for transactions
+    /// @dev This function can only be called once during contract deployment
     function initialize(address[] memory _owners, uint8 _requiredConfirmations) public initializer {
         __ReentrancyGuard_init();
         if (_owners.length == 0) revert MSW_EmptyOwnersList();
@@ -66,15 +89,19 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         requiredConfirmations = _requiredConfirmations;
     }
 
+    /// @notice Disables the initializer to prevent multiple initializations
     constructor() {
         _disableInitializers();
     }
 
     // ============ External Functions ============
     /// @notice Submit a new transaction to be executed
-    /// @param _to The address to send the transaction to
-    /// @param _value The amount of ETH to send
-    /// @param _data The transaction data
+    /// @param _token Address of the token to transfer (NATIVE_TOKEN for ETH)
+    /// @param _to Recipient address
+    /// @param _value Amount to transfer
+    /// @param _data Transaction data (empty for simple transfers)
+    /// @param _expiration Time in seconds until transaction expires
+    /// @dev Only owners can submit transactions
     function submitTransaction(address _token, address _to, uint256 _value, bytes memory _data, uint256 _expiration)
         external
         onlyOwner
@@ -96,7 +123,8 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Confirm a transaction
-    /// @param _txIndex The index of the transaction to confirm
+    /// @param _txIndex Index of the transaction to confirm
+    /// @dev Only owners can confirm transactions
     function confirmTransaction(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
 
@@ -111,6 +139,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         emit TransactionConfirmed(msg.sender, _txIndex);
     }
 
+    /// @notice Confirm multiple transactions in a single call
+    /// @param _txIndices Array of transaction indices to confirm
+    /// @dev Only owners can confirm transactions, limited to MAX_MULTI_CONFIRM transactions per call
     function confirmMultipleTransactions(uint256[] memory _txIndices) external onlyOwner {
         if (_txIndices.length > MAX_MULTI_CONFIRM) revert MSW_TooManyConfirmations();
         for (uint256 i = 0; i < _txIndices.length; i++) {
@@ -128,8 +159,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         }
     }
 
-    /// @notice Revoke a transaction confirmation
-    /// @param _txIndex The index of the transaction to revoke confirmation for
+    /// @notice Revoke a previously given confirmation
+    /// @param _txIndex Index of the transaction to revoke confirmation for
+    /// @dev Only owners can revoke their own confirmations
     function revokeConfirmation(uint256 _txIndex) external onlyOwner {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
 
@@ -145,7 +177,8 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Execute a confirmed transaction
-    /// @param _txIndex The index of the transaction to execute
+    /// @param _txIndex Index of the transaction to execute
+    /// @dev Only owners can execute transactions that have enough confirmations
     function executeTransaction(uint256 _txIndex) external onlyOwner nonReentrant {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
 
@@ -173,7 +206,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Submit a transaction to add a new owner
-    /// @param _newOwner The address of the new owner to add
+    /// @param _newOwner Address of the new owner to add
+    /// @param _expiration Time in seconds until transaction expires
+    /// @dev Only owners can submit add owner transactions
     function submitAddOwner(address _newOwner, uint256 _expiration) external onlyOwner {
         if (_newOwner == address(0)) revert MSW_InvalidOwnerAddress();
         if (isOwner[_newOwner]) revert MSW_DuplicateOwner();
@@ -198,7 +233,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Submit a transaction to remove an owner
-    /// @param _ownerToRemove The address of the owner to remove
+    /// @param _ownerToRemove Address of the owner to remove
+    /// @param _expiration Time in seconds until transaction expires
+    /// @dev Only owners can submit remove owner transactions
     function submitRemoveOwner(address _ownerToRemove, uint256 _expiration) external onlyOwner {
         if (!isOwner[_ownerToRemove]) revert MSW_OldOwnerInvalid();
         if (owners.length - 1 < requiredConfirmations) revert MSW_ConfirmationsExceedOwnersCount();
@@ -223,7 +260,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Submit a transaction to change the required number of confirmations
-    /// @param _newRequiredConfirmations The new number of required confirmations
+    /// @param _newRequiredConfirmations New number of required confirmations
+    /// @param _expiration Time in seconds until transaction expires
+    /// @dev Only owners can submit change required confirmations transactions
     function changeRequiredConfirmations(uint8 _newRequiredConfirmations, uint256 _expiration) external onlyOwner {
         if (_newRequiredConfirmations > owners.length) revert MSW_ConfirmationsExceedOwnersCount();
         if (_newRequiredConfirmations < 1) revert MSW_InvalidRequireConfirmations();
@@ -249,6 +288,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // ============ Internal Functions ============
+    /// @notice Internal function to execute add owner transaction
+    /// @param txData Encoded transaction data
+    /// @param transaction Transaction storage reference
     function _executeAddOwner(bytes memory txData, Transaction storage transaction) internal {
         address newOwner = abi.decode(txData.slice(4), (address));
 
@@ -259,6 +301,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         emit OwnerAdded(newOwner);
     }
 
+    /// @notice Internal function to execute remove owner transaction
+    /// @param txData Encoded transaction data
+    /// @param transaction Transaction storage reference
     function _executeRemoveOwner(bytes memory txData, Transaction storage transaction) internal {
         address oldOwner = abi.decode(txData.slice(4), (address));
 
@@ -276,6 +321,9 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         emit OwnerRemoved(oldOwner);
     }
 
+    /// @notice Internal function to execute change required confirmations transaction
+    /// @param txData Encoded transaction data
+    /// @param transaction Transaction storage reference
     function _executeChangeRequiredConfirmations(bytes memory txData, Transaction storage transaction) internal {
         uint8 oldReqConf = requiredConfirmations;
         uint8 newReqConf = abi.decode(txData.slice(4), (uint8));
@@ -286,6 +334,10 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
         emit RequireConfirmationsChanged(oldReqConf, newReqConf);
     }
 
+    /// @notice Internal function to execute a regular transaction
+    /// @param txData Transaction data
+    /// @param _txIndex Transaction index
+    /// @param transaction Transaction storage reference
     function _executeTransaction(bytes memory txData, uint256 _txIndex, Transaction storage transaction) internal {
         transaction.executed = true;
 
@@ -306,29 +358,32 @@ contract MultiSigWallet is Initializable, ReentrancyGuardUpgradeable {
     }
 
     // ============ View Functions ============
-    /// @notice Get the number of owners
-    /// @return The number of owners
+    /// @notice Get the total number of owners
+    /// @return Number of owners
     function getOwnerCount() public view returns (uint256) {
         return owners.length;
     }
 
-    /// @notice Get all owners
+    /// @notice Get all owner addresses
     /// @return Array of owner addresses
     function getOwners() public view returns (address[] memory) {
         return owners;
     }
 
-    /// @notice Get transaction details
-    /// @param _txIndex The index of the transaction
-    /// @return The transaction details
+    /// @notice Get transaction details by index
+    /// @param _txIndex Index of the transaction
+    /// @return Transaction details
     function getTransaction(uint256 _txIndex) public view returns (Transaction memory) {
         if (_txIndex >= transactions.length) revert MSW_TxDoesNotExist();
         return transactions[_txIndex];
     }
 
+    /// @notice Function to receive ETH
+    /// @dev This function is called when ETH is sent to the contract
     receive() external payable {
         emit Deposited(msg.sender, msg.value);
     }
 
-    uint256[100] private __gap; // gap for future upgrades
+    /// @notice Storage gap for future upgrades
+    uint256[100] private __gap;
 }
